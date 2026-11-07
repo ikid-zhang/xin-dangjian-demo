@@ -1,0 +1,2032 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#8C1D18">
+<title>芯党建 · 微信小程序端</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   芯党建 · 小程序端（产品界面原型）
+   人格：深朱红场 · 米纸档案卡 · 宋体标题 · 方章群组 / 圆章个人 · 4px 方角
+   机制：党报版式搬进聊天界面 —— 细线分隔、印章角标、纸面卡，
+        与深蓝暗场的常见 App 稿区分开。
+   ══════════════════════════════════════════════════════════════════ */
+:root{
+  --red:#8C1D18;
+  --red-deep:#6E1210;
+  --red-line:rgba(251,244,230,.16);
+  --paper:#FBF4E6;
+  --paper-2:#F3E8D2;
+  --ink:#2B1A15;
+  --ink-2:#6E5A4C;
+  --gold:#E0B15E;
+  --gold-ink:#3A1E12;
+  --cream:rgba(251,244,230,.62);
+
+  --r-card:4px;
+  --r-ctl:8px;
+  --pill:999px;
+  --ease:cubic-bezier(.22,.75,.3,1);
+  --tab:58px;
+
+  --frame:#3A0C0A;
+  --frame-2:#5C1411;
+  --stage-1:#8C322B;
+  --stage-2:#2A0806;
+  --halo-1:#C8453A;
+  --halo-2:#E0B15E;
+  --halo-a:.30;
+  --stage-art:none;
+
+  --serif:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC",serif;
+  --sans:-apple-system,"PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+
+  --shadow-card:0 1px 2px rgba(58,8,6,.20),0 10px 22px -10px rgba(58,8,6,.38);
+  --shadow-float:0 -1px 0 rgba(251,244,230,.10),0 -18px 44px -18px rgba(20,4,3,.55);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--red);color:var(--paper);overflow:hidden;
+  font-family:var(--sans);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;min-height:24px}
+img,svg{display:block;max-width:100%}
+.serif{font-family:var(--serif)}
+
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;background:radial-gradient(130% 92% at 50% 6%,var(--stage-1),var(--stage-2) 74%)}
+.stage::before{content:"";position:absolute;inset:-18%;z-index:0;pointer-events:none;
+  opacity:var(--halo-a);filter:blur(92px);
+  background:
+    radial-gradient(36% 28% at 20% 22%,var(--halo-1),transparent 70%),
+    radial-gradient(40% 32% at 80% 76%,var(--halo-2),transparent 72%)}
+.stage::after{content:"";position:absolute;inset:-12%;z-index:0;pointer-events:none;
+  background:var(--stage-art) center/cover no-repeat;filter:blur(48px) saturate(1.05);opacity:.4}
+#app{position:relative;z-index:1;width:100%;height:100%;overflow:hidden;background:var(--red)}
+@media(min-width:760px){
+  #app{width:390px;height:min(844px,86vh);border-radius:44px;
+    box-shadow:0 0 0 11px var(--frame),0 0 0 13px var(--frame-2),0 44px 100px rgba(20,4,3,.5)}
+  .notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);
+    width:112px;height:26px;border-radius:15px;background:var(--frame);z-index:60}
+}
+@media(max-width:759px){.notch{display:none}.stage::before,.stage::after{display:none}
+  #app{max-width:520px;margin:0 auto}}
+
+/* ── 状态栏 ── */
+.statusbar{position:absolute;top:0;left:0;right:0;z-index:55;height:44px;padding:0 22px;
+  display:flex;align-items:center;justify-content:space-between;pointer-events:none;
+  font-size:13px;font-weight:600;color:var(--paper)}
+.sb-r{display:flex;align-items:center;gap:5px}
+.sb-r i{display:block;background:currentColor;border-radius:1px}
+.sb-r .sig{width:15px;height:10px;
+  clip-path:polygon(0 72%,18% 72%,18% 100%,0 100%,0 72%,27% 46%,45% 46%,45% 100%,27% 100%,
+    27% 46%,54% 22%,72% 22%,72% 100%,54% 100%,54% 22%,82% 0,100% 0,100% 100%,82% 100%)}
+.sb-r .wifi{width:14px;height:10px;
+  clip-path:polygon(50% 100%,32% 74%,68% 74%,50% 100%,50% 66%,20% 40%,28% 30%,72% 30%,80% 40%,
+    50% 66%,50% 24%,8% 12%,14% 2%,86% 2%,92% 12%)}
+.sb-r .bat{width:22px;height:11px;border-radius:3px;position:relative;
+  box-shadow:inset 0 0 0 1px currentColor}
+.sb-r .bat::before{content:"";position:absolute;inset:2px;width:64%;
+  background:currentColor;border-radius:1px}
+
+/* ── 顶部栏：产品身份，不是页码 ── */
+.topbar{position:absolute;top:0;left:0;right:0;z-index:50;
+  padding:calc(env(safe-area-inset-top) + 50px) 18px 10px;
+  display:flex;align-items:center;gap:10px;
+  background:linear-gradient(180deg,var(--red) 0,var(--red) calc(100% - 12px),rgba(140,29,24,0));
+  box-shadow:0 8px 16px -12px rgba(110,18,16,.55)}
+.tb-title{font-family:var(--serif);font-size:18px;font-weight:700;letter-spacing:.06em}
+.tb-sub{font-size:11.5px;color:var(--cream);letter-spacing:.1em;margin-top:1px}
+.tb-act{margin-left:auto;display:flex;gap:8px}
+.icbtn{width:34px;height:34px;border-radius:var(--pill);display:grid;place-items:center;
+  border:1px solid var(--red-line);color:var(--paper)}
+.icbtn svg{width:17px;height:17px}
+
+/* ── 内容流 ── */
+#flow{position:relative;z-index:10;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  padding:calc(env(safe-area-inset-top) + 98px) 16px
+          calc(var(--tab) + env(safe-area-inset-bottom) + 18px)}
+#flow::-webkit-scrollbar{display:none}
+.panel[hidden]{display:none}
+.eyebrow{font-size:11px;letter-spacing:.18em;color:var(--cream);margin:16px 0 8px}
+.eyebrow:first-child{margin-top:0}
+
+/* ── 首屏：红旗织物满版压字（字图互锁） ── */
+.hero{position:relative;height:172px;border-radius:var(--r-card);overflow:hidden;
+  margin-bottom:12px;box-shadow:var(--shadow-card)}
+.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero .veil{position:absolute;inset:0;
+  background:linear-gradient(102deg,rgba(110,18,16,.94) 0%,rgba(140,29,24,.80) 44%,rgba(140,29,24,.16) 100%)}
+.hero .inner{position:relative;padding:16px 16px 14px;height:100%;
+  display:flex;flex-direction:column;justify-content:space-between}
+.hero .row1{display:flex;align-items:flex-start;gap:10px}
+.hero h1{font-family:var(--serif);font-size:26px;line-height:1.18;letter-spacing:.10em;font-weight:700}
+.hero .sub{font-size:11.5px;color:rgba(251,244,230,.72);letter-spacing:.12em;margin-top:6px}
+.seal{margin-left:auto;width:46px;height:46px;border:1.5px solid rgba(224,177,94,.86);
+  color:var(--gold);display:grid;place-items:center;font-family:var(--serif);font-size:17px;
+  border-radius:3px;transform:rotate(-4deg);opacity:.92}
+.hero .foot{display:flex;align-items:center;gap:14px;font-size:11.5px;color:rgba(251,244,230,.8)}
+.hero .foot b{font-size:14px;font-family:var(--serif);color:var(--paper);font-weight:700}
+
+/* ── 快捷入口：四格网格 ── */
+.qgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.q{background:var(--paper);border-radius:var(--r-card);padding:11px 4px 9px;text-align:center;
+  color:var(--ink);box-shadow:var(--shadow-card);display:flex;flex-direction:column;
+  align-items:center;gap:6px}
+.q svg{width:19px;height:19px;color:var(--red)}
+.q span{font-size:11px;letter-spacing:.02em;color:var(--ink-2)}
+
+/* ── 米纸卡 ── */
+.card{background:var(--paper);color:var(--ink);border-radius:var(--r-card);
+  box-shadow:var(--shadow-card);overflow:hidden;margin-bottom:12px}
+.card .pad{padding:12px 13px}
+.hd{display:flex;align-items:baseline;gap:8px}
+.hd h2{font-family:var(--serif);font-size:15px;font-weight:700;letter-spacing:.03em}
+.hd .more{margin-left:auto;font-size:11.5px;color:var(--ink-2)}
+.rule{height:1px;background:rgba(43,26,21,.14);margin:10px -13px}
+.rule.in{margin:10px 0}
+
+/* 学习进度 */
+.study{display:flex;gap:11px;align-items:flex-start}
+.study img{width:78px;height:58px;object-fit:cover;border-radius:3px;flex:none}
+.study .t{font-family:var(--serif);font-size:14px;line-height:1.45;font-weight:700}
+.study .m{font-size:11.5px;color:var(--ink-2);margin-top:3px}
+.prog{height:3px;background:rgba(43,26,21,.14);margin-top:9px;border-radius:2px;position:relative}
+.prog i{position:absolute;left:0;top:0;bottom:0;width:62.5%;background:var(--red);border-radius:2px}
+.pmeta{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-2);margin-top:5px;
+  font-variant-numeric:tabular-nums}
+.btn{height:36px;border-radius:var(--r-ctl);font-size:13px;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:0 14px}
+.btn.gold{background:var(--gold);color:var(--gold-ink)}
+.btn.ghost{border:1px solid rgba(140,29,24,.32);color:var(--red)}
+.btn.done{background:rgba(43,26,21,.10);color:var(--ink-2)}
+
+/* 活动卡：会场实拍压在上缘 */
+.act img{width:100%;height:118px;object-fit:cover;display:block}
+.act .body{padding:12px 13px 13px}
+.act .tag{display:inline-block;font-size:10.5px;letter-spacing:.12em;color:var(--red);
+  border:1px solid rgba(140,29,24,.34);border-radius:2px;padding:2px 6px;margin-bottom:7px}
+.act h2{font-family:var(--serif);font-size:15px;line-height:1.5;font-weight:700}
+.act .meta{font-size:11.5px;color:var(--ink-2);margin-top:6px;line-height:1.7}
+.act .foot{display:flex;align-items:center;gap:10px;margin-top:10px}
+.act .who{font-size:11.5px;color:var(--ink-2)}
+.act .foot .btn{margin-left:auto}
+
+/* 要闻列表：细线分隔，不用卡片墙 */
+.news .r{display:flex;gap:10px;padding:11px 0;align-items:flex-start}
+.news .r+.r{border-top:1px solid rgba(43,26,21,.12)}
+.news .th{width:58px;height:42px;object-fit:cover;border-radius:3px;flex:none}
+.news .tx{font-size:13px;line-height:1.5;color:var(--ink);flex:1}
+.news .dt{font-size:11px;color:var(--ink-2);margin-top:4px;letter-spacing:.04em}
+
+/* ── 消息：会话行 ── */
+.conv{display:flex;align-items:center;gap:10px;background:var(--paper);color:var(--ink);
+  border-radius:var(--r-card);padding:11px 12px;margin-bottom:8px;box-shadow:var(--shadow-card);
+  width:100%;text-align:left}
+.av{width:44px;height:44px;flex:none;display:grid;place-items:center;
+  font-family:var(--serif);font-size:17px;border-radius:2px;
+  background:var(--red);color:var(--paper);letter-spacing:.04em}
+.av.p{border-radius:var(--pill);background:var(--paper-2);color:var(--red);
+  border:1px solid rgba(140,29,24,.30);font-size:15px}
+.conv .mid{flex:1;min-width:0}
+.conv .nm{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
+.conv .nm .cnt{font-size:10.5px;font-weight:500;color:var(--ink-2);letter-spacing:.04em;
+  border:1px solid rgba(43,26,21,.18);border-radius:2px;padding:0 4px}
+.conv .pv{font-size:11.5px;color:var(--ink-2);margin-top:3px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.conv .rt{text-align:right;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.conv .tm{font-size:10.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.un{min-width:17px;height:17px;border-radius:var(--pill);background:var(--gold);
+  color:var(--gold-ink);font-size:10.5px;font-weight:700;display:grid;place-items:center;padding:0 5px}
+.secrow{display:flex;align-items:center;gap:8px;margin:14px 0 8px}
+.secrow h3{font-family:var(--serif);font-size:13.5px;letter-spacing:.08em;font-weight:700}
+.secrow .c{font-size:11px;color:var(--cream);letter-spacing:.06em}
+.secrow .act2{margin-left:auto;font-size:11.5px;color:var(--cream);border-bottom:1px solid var(--red-line)}
+
+/* 会话行：档案式细线，不做等大卡阵列 */
+.listcard{background:var(--paper);border-radius:var(--r-card);box-shadow:var(--shadow-card);
+  overflow:hidden;margin-bottom:12px}
+.convrow{display:flex;align-items:center;gap:10px;padding:11px 12px;width:100%;text-align:left;
+  color:var(--ink)}
+.convrow+.convrow{border-top:1px solid rgba(43,26,21,.12)}
+.convrow .av{width:40px;height:40px;font-size:15px}
+.convrow .mid{flex:1;min-width:0}
+.convrow .nm{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
+.convrow .nm .cnt{font-size:10.5px;font-weight:500;color:var(--ink-2);letter-spacing:.04em;
+  border:1px solid rgba(43,26,21,.18);border-radius:2px;padding:0 4px}
+.convrow .pv{font-size:11.5px;color:var(--ink-2);margin-top:2px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.convrow .rt{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.convrow .tm{font-size:10.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+
+/* ── 通讯录 ── */
+.org{background:var(--paper);color:var(--ink);border-radius:var(--r-card);
+  box-shadow:var(--shadow-card);overflow:hidden;margin-bottom:12px}
+.org .r{display:flex;align-items:center;gap:10px;padding:12px 13px;width:100%;text-align:left}
+.org .r+.r{border-top:1px solid rgba(43,26,21,.12)}
+.org .r .nm{font-size:13.5px}
+.org .r .sub{font-size:11px;color:var(--ink-2);margin-top:2px}
+.org .r .cnt{margin-left:auto;font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.org .r .lv{width:3px;align-self:stretch;background:rgba(140,29,24,.22);border-radius:1px}
+.mini{width:28px;height:28px;border-radius:var(--pill);display:grid;place-items:center;
+  font-family:var(--serif);font-size:12px;background:var(--paper-2);color:var(--red);
+  border:1px solid rgba(140,29,24,.26)}
+
+/* ── 我的 ── */
+.idcard{background:var(--paper);color:var(--ink);border-radius:var(--r-card);
+  padding:16px 14px;box-shadow:var(--shadow-card);margin-bottom:12px;position:relative;overflow:hidden}
+.idcard .wm{position:absolute;right:10px;bottom:2px;font-family:var(--serif);font-size:56px;
+  color:rgba(140,29,24,.13);line-height:1;letter-spacing:.06em;pointer-events:none}
+.bars{display:flex;align-items:flex-end;gap:9px;height:52px;margin-top:10px}
+.bars div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}
+.bars i{width:100%;background:rgba(43,26,21,.16);border-radius:2px 2px 0 0}
+.bars i.on{background:var(--red)}
+.bars span{font-size:10px;color:var(--ink-2)}
+.idcard .nm{font-family:var(--serif);font-size:22px;font-weight:700;letter-spacing:.10em}
+.idcard .role{font-size:11.5px;color:var(--ink-2);margin-top:5px;letter-spacing:.06em}
+.stats{display:flex;gap:0;margin-top:14px;border-top:1px solid rgba(43,26,21,.14);padding-top:12px}
+.stats div{flex:1;text-align:left}
+.stats b{display:block;font-family:var(--serif);font-size:19px;font-variant-numeric:tabular-nums}
+.stats span{font-size:10.5px;color:var(--ink-2);letter-spacing:.06em}
+.setrow{display:flex;align-items:center;gap:10px;padding:12px 13px;width:100%;text-align:left;
+  font-size:13.5px;color:var(--ink)}
+.setrow+.setrow{border-top:1px solid rgba(43,26,21,.12)}
+.setrow svg{width:16px;height:16px;color:var(--red)}
+.setrow .v{margin-left:auto;font-size:11.5px;color:var(--ink-2)}
+
+/* ── 底部 tab：位置表达 ── */
+.tabbar{position:absolute;left:0;right:0;bottom:0;z-index:50;height:var(--tab);
+  padding-bottom:env(safe-area-inset-bottom);
+  display:flex;align-items:stretch;background:var(--red-deep);
+  border-top:1px solid var(--red-line);box-shadow:var(--shadow-float)}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;font-size:10.5px;color:rgba(251,244,230,.55);position:relative}
+.tabbar button.on{color:var(--gold)}
+.tabbar svg{width:19px;height:19px}
+.tabbar .dot{position:absolute;top:8px;right:calc(50% - 22px);width:6px;height:6px;border-radius:999px;
+  background:var(--gold)}
+
+/* ── 详情层（聊天 / 群信息）── */
+.detail{position:absolute;inset:0;z-index:80;background:var(--red);display:none;
+  flex-direction:column;padding-top:calc(env(safe-area-inset-top) + 44px)}
+.detail.on{display:flex}
+
+/* ── 模块页与文章页（三会一课 / 学习中心 / 廉政课堂 / 党费 / 要闻）── */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+.chip{height:27px;padding:0 11px;border-radius:var(--pill);border:1px solid rgba(43,26,21,.18);background:transparent;color:var(--ink-2);font:500 11px/25px var(--sans);letter-spacing:.04em}
+.chip.on{background:var(--gold);border-color:var(--gold);color:var(--gold-ink);font-weight:600}
+.qin{width:100%;height:34px;border-radius:var(--r-ctl);border:1px solid rgba(43,26,21,.16);background:rgba(43,26,21,.04);color:var(--ink);font:400 12px var(--sans);padding:0 10px;margin-bottom:10px;letter-spacing:.02em}
+.qin::placeholder{color:rgba(110,90,76,.7)}
+.empty{padding:14px 0;font-size:12px;color:var(--ink-2);text-align:center}
+.sheet{z-index:92}
+.sheet .row{margin-top:10px}
+.sheet label{display:block;font-size:10.5px;color:var(--ink-2);letter-spacing:.06em;margin-bottom:4px}
+.sheet select,.sheet textarea{width:100%;border-radius:var(--r-ctl);border:1px solid rgba(43,26,21,.2);background:rgba(251,244,230,.9);color:var(--ink);font:400 13px var(--sans);padding:0 10px}
+.sheet select{height:38px}
+.sheet textarea{padding:9px 10px;line-height:1.7;resize:none}
+.sheet .del{display:none;width:100%;height:38px;margin-top:12px;border-radius:var(--r-ctl);background:transparent;border:1px solid rgba(140,29,24,.4);color:var(--red);font:600 12px var(--sans)}
+.sheet .foot{display:flex;gap:8px;margin-top:12px}
+.sheet .foot .cancel{width:92px;height:42px;border-radius:var(--r-ctl);background:transparent;border:1px solid rgba(43,26,21,.2);color:var(--ink);font:600 12px var(--sans)}
+.sheet .foot .submit{flex:1}
+.newsrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid rgba(43,26,21,.09);width:100%;text-align:left;cursor:pointer}
+.newsrow .th{width:48px;height:48px;border-radius:3px;object-fit:cover;flex:none}
+.newsrow .mid{flex:1;min-width:0}
+.newsrow .tt{font:500 13px/1.55 var(--sans);color:var(--ink)}
+.newsrow .mm{font:400 10.5px/1.4 var(--sans);color:var(--ink-2);margin-top:4px}
+.newsrow .ed{flex:none;font:500 10.5px var(--sans);color:var(--red);padding:4px 8px;border:1px solid rgba(140,29,24,.25);border-radius:var(--pill)}
+/* ── 在线学习：视频 / PPT / Word 讲义 ── */
+.kind{display:inline-block;font-size:9.5px;letter-spacing:.10em;padding:1px 5px;border-radius:2px;
+  border:1px solid rgba(140,29,24,.34);color:var(--red);background:rgba(140,29,24,.05);vertical-align:2px}
+.vframe{position:relative;aspect-ratio:16/10;overflow:hidden;border-radius:var(--r-card);background:#2A1210}
+.vframe>img{width:100%;height:100%;object-fit:cover;display:block;opacity:.9}
+.vframe .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,10,9,.42),rgba(28,10,9,.80))}
+.vtop,.vbottom{position:absolute;left:0;right:0;color:var(--paper);padding:9px 12px}
+.vtop{top:0;display:flex;justify-content:space-between;align-items:center;gap:8px;
+  font-size:10.5px;letter-spacing:.05em;color:rgba(251,244,230,.86)}
+.vbottom{bottom:0;padding-bottom:10px}
+.vplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:52px;height:52px;
+  border-radius:var(--pill);background:rgba(251,244,230,.94);color:var(--red);display:grid;place-items:center;
+  box-shadow:0 12px 26px -12px rgba(0,0,0,.7)}
+.vplay svg{width:20px;height:20px}
+.vbar{position:relative;height:3px;border-radius:2px;background:rgba(251,244,230,.26);margin-bottom:7px}
+.vbar i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--gold)}
+.vrow{display:flex;align-items:center;justify-content:space-between;font-size:11px;
+  font-variant-numeric:tabular-nums;color:rgba(251,244,230,.9)}
+.chrow{display:flex;align-items:center;gap:10px;width:100%;padding:9px 0;text-align:left;
+  border-bottom:1px solid rgba(43,26,21,.1)}
+.chrow:last-child{border-bottom:0}
+.chrow .no{flex:none;width:22px;font:600 12px/1.2 var(--serif);color:var(--ink-2);text-align:center}
+.chrow.on .no{color:var(--red)}
+.chrow .mid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.chrow .nm{display:block;font-size:12.5px;font-weight:500;line-height:1.5}
+.chrow.on .nm{color:var(--red)}
+.chrow .mm{display:block;font-size:10.5px;color:var(--ink-2);margin-top:2px}
+.slide{background:var(--paper-2);color:var(--ink);border:1px solid rgba(43,26,21,.13);border-radius:var(--r-card);
+  padding:13px 14px 11px;min-height:216px;display:flex;flex-direction:column}
+.slide .sh{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.12em;color:var(--ink-2)}
+.slide h3{font:700 17px/1.5 var(--serif);letter-spacing:.02em;margin:11px 0 9px}
+.slide ul{margin:0;padding-left:15px}
+.slide li{font-size:12px;line-height:1.9;color:var(--ink)}
+.slide li::marker{color:var(--red)}
+.slide .sf{margin-top:auto;padding-top:9px;border-top:1px solid rgba(43,26,21,.13);
+  font-size:9.5px;letter-spacing:.1em;color:var(--ink-2);display:flex;justify-content:space-between}
+.pbtn svg{width:14px;height:14px}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.pager .mid{font:600 12px var(--sans);color:var(--ink-2);font-variant-numeric:tabular-nums;letter-spacing:.06em}
+.dots{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.dots button{width:26px;height:20px;border-radius:3px;border:1px solid rgba(43,26,21,.2);
+  font-size:10px;color:var(--ink-2);background:transparent}
+.dots button.on{background:var(--red);border-color:var(--red);color:var(--paper)}
+.doc{background:var(--paper);color:var(--ink);border-radius:var(--r-card);box-shadow:var(--shadow-card);padding:16px 16px 12px}
+.doc .dh{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.1em;
+  color:var(--ink-2);border-bottom:1px solid rgba(43,26,21,.16);padding-bottom:8px}
+.doc h1{font:700 16.5px/1.6 var(--serif);text-align:center;letter-spacing:.03em;margin:13px 0 11px}
+.doc p{font-size:var(--fs,12.5px);line-height:1.95;text-indent:2em;margin-bottom:9px;color:var(--ink)}
+.doc .df{margin-top:12px;padding-top:9px;border-top:1px solid rgba(43,26,21,.16);
+  display:flex;justify-content:center;font-size:9.5px;letter-spacing:.1em;color:var(--ink-2)}
+.docbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px}
+.docbar .fss{display:flex;gap:6px;align-items:center}
+.docbar .fss .mini2{width:28px;height:26px;border-radius:var(--r-ctl);border:1px solid rgba(43,26,21,.2);
+  font-size:11px;color:var(--ink);background:transparent;display:grid;place-items:center}
+#page{position:absolute;inset:0;z-index:78;background:var(--red);display:none;
+  flex-direction:column;padding-top:calc(env(safe-area-inset-top) + 44px)}
+#page.on{display:flex}
+#pflow{flex:1;overflow-y:auto;scrollbar-width:none;padding:12px 14px 24px}
+#pflow::-webkit-scrollbar{display:none}
+.statline{display:flex;background:rgba(251,244,230,.10);border:1px solid var(--red-line);
+  border-radius:var(--r-card);padding:11px 4px;margin-bottom:12px}
+.statline>div{flex:1;text-align:center;position:relative}
+.statline>div+div::before{content:"";position:absolute;left:0;top:3px;bottom:3px;width:1px;
+  background:var(--red-line)}
+.statline b{display:block;font:700 18px/1.2 var(--serif);letter-spacing:.02em}
+.statline b s{text-decoration:none;font-size:10.5px;color:var(--cream);margin-left:2px}
+.statline span{display:block;font-size:10px;color:var(--cream);letter-spacing:.08em;margin-top:3px}
+.prow{display:flex;align-items:flex-start;gap:10px;padding:12px 0;width:100%;text-align:left}
+.prow+.prow{border-top:1px solid rgba(43,26,21,.12)}
+.prow .dt{flex:none;width:44px;text-align:center}
+.prow .dt b{display:block;font:700 15px/1.2 var(--serif)}
+.prow .dt span{display:block;font-size:9.5px;color:var(--ink-2);letter-spacing:.06em}
+.prow .mid{flex:1;min-width:0}
+.prow .tt{font-size:13.5px;font-weight:600;letter-spacing:.01em;line-height:1.5}
+.prow .mm{font-size:11px;color:var(--ink-2);margin-top:3px;line-height:1.6}
+.prow .rt{flex:none;text-align:right}
+.pst{display:inline-block;font-size:10px;letter-spacing:.08em;padding:2px 6px;border-radius:var(--r-card);
+  border:1px solid rgba(43,26,21,.18);color:var(--ink-2)}
+.pst.warn{color:var(--red);border-color:rgba(140,29,24,.4);background:rgba(140,29,24,.06)}
+.pst.ok{color:var(--ink);border-color:rgba(43,26,21,.14);background:rgba(43,26,21,.05)}
+.pbtn{height:28px;padding:0 10px;border-radius:var(--pill);font-size:11px;font-weight:600;
+  background:var(--gold);color:var(--gold-ink);margin-top:6px}
+.pbtn.ghost{background:transparent;border:1px solid rgba(43,26,21,.24);color:var(--ink)}
+.pbtn.done{background:transparent;border:1px solid rgba(43,26,21,.24);color:var(--ink-2)}
+.art .kicker{font-size:10.5px;letter-spacing:.16em;color:var(--red);margin-bottom:8px}
+.art h2{font:700 19px/1.45 var(--serif);letter-spacing:.01em;margin-bottom:8px}
+.art .src{font-size:10.5px;color:var(--ink-2);letter-spacing:.04em;margin-bottom:12px}
+.art p{font-size:13.5px;line-height:1.9;letter-spacing:.01em;margin-bottom:11px;text-indent:2em}
+.art .quote{border-left:2px solid var(--red);padding:2px 0 2px 10px;margin:12px 0;
+  font-size:12.5px;line-height:1.85;color:var(--ink-2);text-indent:0}
+.art .ask{background:rgba(140,29,24,.05);border:1px solid rgba(140,29,24,.18);border-radius:var(--r-card);
+  padding:10px 11px;font-size:12px;line-height:1.8;color:var(--ink);margin:14px 0 4px;text-indent:0}
+.sumbar{display:flex;align-items:center;gap:10px;margin-top:4px}
+.sumbar .bar{flex:1;height:4px;border-radius:999px;background:rgba(43,26,21,.14);overflow:hidden}
+.sumbar .bar i{display:block;height:100%;background:var(--red)}
+.dhead{height:52px;flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;
+  border-bottom:1px solid var(--red-line);background:var(--red)}
+.dhead .back{width:30px;height:30px;display:grid;place-items:center;color:var(--paper)}
+.dhead .back svg{width:18px;height:18px}
+.dhead .ti{min-width:0}
+.dhead .ti b{display:block;font-family:var(--serif);font-size:14.5px;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.03em}
+.dhead .ti span{display:block;font-size:10.5px;color:var(--cream);letter-spacing:.06em;margin-top:1px}
+.dhead .r{margin-left:auto;display:flex;gap:6px}
+#dflow{flex:1;overflow-y:auto;scrollbar-width:none;padding:12px 14px 16px}
+#dflow::-webkit-scrollbar{display:none}
+#dflow.withbar{padding-bottom:12px}
+
+.dayline{text-align:center;font-size:10.5px;color:rgba(251,244,230,.5);letter-spacing:.12em;
+  margin:6px 0 12px}
+.msg{display:flex;gap:8px;margin-bottom:12px;align-items:flex-start}
+.msg .av{width:32px;height:32px;font-size:13px;flex:none}
+.msg .body{max-width:76%}
+.msg .from{font-size:10.5px;color:rgba(251,244,230,.62);margin-bottom:4px;letter-spacing:.04em}
+.bubble{padding:9px 11px;border-radius:9px;font-size:13.5px;line-height:1.65;
+  background:var(--paper);color:var(--ink);border-top-left-radius:2px;box-shadow:var(--shadow-card)}
+.msg.out{flex-direction:row-reverse}
+.msg.out .body{margin-left:auto;text-align:right}
+.msg.out .bubble{background:var(--gold);color:var(--gold-ink);border-top-left-radius:9px;
+  border-top-right-radius:2px;text-align:left}
+.msg .rd{font-size:10px;color:rgba(251,244,230,.55);margin-top:4px;letter-spacing:.06em}
+.notice{background:rgba(251,244,230,.09);border:1px solid var(--red-line);border-radius:var(--r-card);
+  padding:9px 11px;font-size:11.5px;line-height:1.7;color:rgba(251,244,230,.86);margin-bottom:12px}
+.notice b{font-family:var(--serif);font-size:12px;letter-spacing:.06em;color:var(--gold)}
+.composer{flex:none;display:flex;gap:8px;align-items:center;
+  padding:9px 12px calc(env(safe-area-inset-bottom) + 10px);
+  background:var(--red-deep);border-top:1px solid var(--red-line)}
+.composer .ic{width:30px;height:30px;display:grid;place-items:center;color:rgba(251,244,230,.8)}
+.composer .ic svg{width:18px;height:18px}
+.composer input{flex:1;height:38px;border-radius:var(--r-ctl);padding:0 12px;font-size:13.5px;
+  background:rgba(251,244,230,.10);border:1px solid rgba(251,244,230,.22);color:var(--paper)}
+.composer input::placeholder{color:rgba(251,244,230,.5)}
+.composer .send{height:38px;padding:0 15px;border-radius:var(--r-ctl);background:var(--gold);
+  color:var(--gold-ink);font-weight:700;font-size:13px}
+
+/* 群信息 */
+.gtop{background:var(--paper);color:var(--ink);border-radius:var(--r-card);padding:15px 14px;
+  display:flex;gap:12px;align-items:center;box-shadow:var(--shadow-card);margin-bottom:12px}
+.gtile{width:56px;height:56px;flex:none;border-radius:2px;background:var(--red);color:var(--paper);
+  display:grid;place-items:center;font-family:var(--serif);font-size:23px;letter-spacing:.04em}
+.gtop .nm{font-family:var(--serif);font-size:16px;font-weight:700;letter-spacing:.04em;line-height:1.4}
+.gtop .m{font-size:11px;color:var(--ink-2);margin-top:5px;letter-spacing:.04em}
+.gtop .m b{font-variant-numeric:tabular-nums;color:var(--ink)}
+.mgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px 8px}
+.mgrid .m{display:flex;flex-direction:column;align-items:center;gap:5px}
+.mgrid .av{width:40px;height:40px;font-size:14px}
+.mgrid .av.p{font-size:13px}
+.mgrid .n{font-size:10.5px;color:var(--ink-2);white-space:nowrap}
+.mgrid .add{width:40px;height:40px;border-radius:var(--pill);border:1px dashed rgba(140,29,24,.4);
+  display:grid;place-items:center;color:var(--red)}
+.mgrid .add svg{width:15px;height:15px}
+.gfile{display:flex;align-items:center;gap:10px;padding:10px 0}
+.gfile+.gfile{border-top:1px solid rgba(43,26,21,.12)}
+.gfile .fi{width:30px;height:30px;border-radius:3px;background:var(--paper-2);display:grid;
+  place-items:center;color:var(--red);flex:none}
+.gfile .fi svg{width:15px;height:15px}
+.gfile .tx{flex:1;min-width:0}
+.gfile .tx b{display:block;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.gfile .tx span{font-size:10.5px;color:var(--ink-2)}
+.sw{width:38px;height:22px;border-radius:var(--pill);background:rgba(43,26,21,.18);position:relative;
+  flex:none;margin-left:auto;transition:background .2s var(--ease)}
+.sw i{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:999px;background:var(--paper);
+  box-shadow:0 1px 2px rgba(43,26,21,.3);transition:transform .22s var(--ease)}
+.sw.on{background:var(--red)}
+.sw.on i{transform:translateX(16px)}
+.danger{width:100%;height:40px;border-radius:var(--r-ctl);border:1px solid rgba(224,177,94,.5);
+  color:var(--gold);font-size:13px;letter-spacing:.08em;margin-top:4px}
+
+/* ── toast / 弹层 ── */
+.toast{position:absolute;left:50%;bottom:calc(var(--tab) + 26px);z-index:70;
+  transform:translate(-50%,14px);opacity:0;pointer-events:none;max-width:78%;
+  padding:10px 16px;border-radius:var(--pill);background:rgba(43,10,8,.94);
+  border:1px solid var(--red-line);color:var(--paper);font-size:12.5px;line-height:1.5;
+  transition:opacity .28s var(--ease),transform .28s var(--ease)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.scrim{position:absolute;inset:0;z-index:86;background:rgba(20,4,3,.5);
+  opacity:0;pointer-events:none;transition:opacity .24s var(--ease)}
+.scrim.on{opacity:1;pointer-events:auto}
+.modal{position:absolute;left:0;right:0;bottom:0;z-index:88;background:var(--paper);color:var(--ink);
+  border-radius:14px 14px 0 0;padding:14px 16px calc(env(safe-area-inset-bottom) + 16px);
+  transform:translateY(100%);transition:transform .3s var(--ease);max-height:80%;overflow-y:auto}
+.modal.on{transform:none}
+.modal .grab{width:34px;height:4px;border-radius:2px;background:rgba(43,26,21,.2);margin:0 auto 12px}
+.modal h3{font-family:var(--serif);font-size:15px;letter-spacing:.06em}
+.modal .sub{font-size:11.5px;color:var(--ink-2);margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chip{border:1px solid rgba(43,26,21,.2);border-radius:var(--pill);padding:6px 11px;font-size:12.5px;
+  display:flex;align-items:center;gap:6px;color:var(--ink-2)}
+.chip.on{border-color:var(--red);color:var(--red);background:rgba(140,29,24,.06)}
+.chip .sw2{display:none}
+.modal input{width:100%;height:38px;border-radius:var(--r-ctl);border:1px solid rgba(43,26,21,.2);
+  padding:0 11px;font-size:13px;color:var(--ink);background:var(--paper)}
+.modal .submit{width:100%;height:42px;border-radius:var(--r-ctl);background:var(--red);
+  color:var(--paper);font-size:13.5px;font-weight:600;margin-top:12px;letter-spacing:.06em}
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ── 搜索层：一个真实状态，不是一个装饰图标 ── */
+#swrap{position:absolute;left:0;right:0;top:44px;bottom:0;z-index:52;background:var(--paper);color:var(--ink);
+  display:flex;flex-direction:column}
+#swrap[hidden]{display:none}
+.sbar{display:flex;align-items:center;gap:8px;padding:14px 14px 10px;border-bottom:1px solid rgba(43,26,21,.12)}
+.sbar .si{width:30px;height:30px;border-radius:var(--pill);background:var(--paper-2);display:grid;place-items:center;color:var(--ink-2);flex:none}
+.sbar .si svg{width:15px;height:15px}
+.sbar input{flex:1;min-width:0;border:0;background:transparent;font:400 14px/1.4 var(--body);
+  color:var(--ink);outline:none}
+.sbar input::placeholder{color:var(--ink-3)}
+#scancel{border:0;background:transparent;font:600 13px var(--body);color:var(--red);padding:6px 2px}
+#sres{flex:1;overflow:auto;padding:6px 12px 20px}
+.shint{font:600 11px var(--mono);letter-spacing:.14em;color:var(--ink-2);margin:12px 2px 6px}
+#sres .r{display:flex;align-items:center;gap:10px;padding:12px 2px;width:100%;text-align:left;
+  background:transparent;border:0;border-bottom:1px solid rgba(43,26,21,.10);color:var(--ink)}
+#sres .r .nm{font-size:13.5px}
+#sres .r .sub{font-size:11px;color:var(--ink-2);margin-top:2px}
+#sres .r .tag{margin-left:auto;font:600 10.5px var(--mono);letter-spacing:.1em;color:var(--red)}
+#sres .empty{padding:36px 0;text-align:center;color:var(--ink-2);font-size:13px}
+</style>
+
+<body>
+<div class="stage"><div id="app">
+  <div class="notch"></div>
+
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="sb-r"><i class="sig"></i><i class="wifi"></i><i class="bat"></i></span>
+  </div>
+
+  <div class="topbar">
+    <div>
+      <div class="tb-title" id="tbTitle">第一党支部</div>
+      <div class="tb-sub" id="tbSub">微信小程序端 · 12 名党员</div>
+    </div>
+    <div class="tb-act">
+      <button class="icbtn" id="btnSearch" aria-label="搜索">
+        <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="swrap" hidden>
+    <div class="sbar">
+      <span class="si"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg></span>
+      <input id="sinput" placeholder="搜索群组、同志、群文件" aria-label="搜索">
+      <button id="scancel">取消</button>
+    </div>
+    <div id="sres"></div>
+  </div>
+
+  <div id="flow">
+
+    <!-- ══ 首页 ══ -->
+    <section class="panel" data-panel="home">
+      <div class="hero">
+        <img src="assets/hero.jpg" alt="红旗织物局部">
+        <div class="veil"></div>
+        <div class="inner">
+          <div class="row1">
+            <div>
+              <h1>芯党建</h1>
+              <div class="sub">学习 · 组织生活 · 同志联络</div>
+            </div>
+            <div class="seal">芯</div>
+          </div>
+          <div class="foot">
+            <span>本月组织生活 <b id="hLife">2</b> 次</b></span>
+            <span>学习学时 <b id="hHours">12.5</b> / 20</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="qgrid">
+        <button class="q" data-page="meetings">
+          <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,48H40A16,16,0,0,0,24,64V224a15.84,15.84,0,0,0,9.25,14.5A16.05,16.05,0,0,0,40,240a15.89,15.89,0,0,0,10.25-3.78l.09-.07L83,208H216a16,16,0,0,0,16-16V64A16,16,0,0,0,216,48ZM40,224h0ZM216,192H80a8,8,0,0,0-5.23,1.95L40,224V64H216Z"/></svg>
+          <span>三会一课</span>
+        </button>
+        <button class="q" data-page="courses">
+          <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0-40,16V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-32-80a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,136Zm0,32a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,168Z"/></svg>
+          <span>学习中心</span>
+        </button>
+        <button class="q" data-page="dues">
+          <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0-104-104ZM88,152a8,8,0,0,1,8-8h24V96H112a8,8,0,0,1,0-16h24a8,8,0,0,1,8,8v56h16a8,8,0,0,1,0,16H96A8,8,0,0,1,88,152Zm48-96a8,8,0,0,1,8,8v6a8,8,0,0,1-16,0V64A8,8,0,0,1,136,56Z"/></svg>
+          <span>党费缴纳</span>
+        </button>
+        <button class="q" data-page="integrity">
+          <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M248,120a48.05,48.05,0,0,0-48-48H160.2c-2.91-.17-53.62-3.74-101.91-44.24A16,16,0,0,0,32,40V200a16,16,0,0,0,26.29,12.25c37.77-31.68,77-40.76,93.71-43.3v31.72A16,16,0,0,0,159.12,214l11,7.33A16,16,0,0,0,194.5,212l11.77-44.36A48.07,48.07,0,0,0,248,120ZM48,199.93V40h0c42.81,35.91,86.63,45,104,47.24v65.48C134.65,155,90.84,164.07,48,199.93Zm131,8,0,.11-11-7.33V168h21.6ZM200,152H168V88h32a32,32,0,1,1,0,64Z"/></svg>
+          <span>廉政课堂</span>
+        </button>
+      </div>
+
+      <article class="card">
+        <div class="pad">
+          <div class="hd"><h2>党史专题 · 第四讲</h2><span class="more" data-page="courses">继续学习</span></div>
+          <div class="rule"></div>
+          <div class="study">
+            <img src="assets/book.jpg" alt="书册纸页">
+            <div style="flex:1">
+              <div class="t">党的二十届四中全会精神专题辅导</div>
+              <div class="m">课件 3 节 · 视频 28 分钟 · 上次学到 12:04</div>
+              <div class="prog"><i></i></div>
+              <div class="pmeta"><span>已完成 62%</span><span>12.5 / 20 学时</span></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card act">
+        <img src="assets/hall.jpg" alt="支部会场">
+        <div class="body">
+          <span class="tag">主题党日</span>
+          <h2>本周五主题党日 · 学习党的二十届四中全会精神</h2>
+          <div class="meta">10 月 30 日 15:00 · 201 会议室<br>应到 12 人，已报名 9 人</div>
+          <div class="foot">
+            <span class="who">组织委员 张明 发起</span>
+            <button class="btn gold" id="btnSignup">报名参加</button>
+          </div>
+        </div>
+      </article>
+
+      <div class="card">
+        <div class="pad news">
+          <div class="hd"><h2>党建要闻</h2><span class="more" data-page="newslist" id="hNewsCount">全部 12 条</span></div>
+          <div class="rule"></div>
+          <button class="r" data-page="news1">
+            <img class="th" src="assets/seal.jpg" alt="宣纸印章">
+            <div><div class="tx">支部换届选举工作提示：10 月 31 日前完成候选人酝酿</div>
+              <div class="dt">通知 · 10 月 26 日</div></div>
+          </button>
+          <button class="r" data-page="news2">
+            <img class="th" src="assets/stone.jpg" alt="墨石宣纸">
+            <div><div class="tx">第三季度党员发展工作通报：本支部新增预备党员 1 名</div>
+              <div class="dt">要闻 · 10 月 22 日</div></div>
+          </button>
+          <button class="r" data-page="news3">
+            <img class="th" src="assets/book.jpg" alt="书册纸页">
+            <div><div class="tx">关于组织党员参加四中全会精神知识测试的通知</div>
+              <div class="dt">通知 · 10 月 20 日</div></div>
+          </button>
+          <button class="r" data-page="news4">
+            <img class="th" src="assets/seal.jpg" alt="宣纸印章">
+            <div><div class="tx">10 月党费收缴进度：已完成 9 人，3 人待缴</div>
+              <div class="dt">支部通知 · 10 月 18 日</div></div>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 消息 ══ -->
+    <section class="panel" data-panel="msg" hidden>
+      <div class="secrow"><h3>群组</h3><span class="c" id="gcount">3 个</span>
+        <button class="act2" id="btnNewGroup">发起群聊</button></div>
+
+      <div class="listcard" id="glist">
+        <button class="convrow" data-chat="group">
+          <span class="av serif">支</span>
+          <span class="mid">
+            <span class="nm">芯党建 · 第一党支部群 <span class="cnt">24 人</span></span>
+            <span class="pv">张明：下午支委会材料已发到群文件，请查收</span>
+          </span>
+          <span class="rt"><span class="tm">10:24</span><span class="un">3</span></span>
+        </button>
+        <button class="convrow" data-chat="group2">
+          <span class="av serif">学</span>
+          <span class="mid">
+            <span class="nm">党史学习小组 <span class="cnt">12 人</span></span>
+            <span class="pv">李静：第四讲课件已更新，本周五前完成</span>
+          </span>
+          <span class="rt"><span class="tm">09:12</span><span class="un">1</span></span>
+        </button>
+        <button class="convrow" data-chat="group3">
+          <span class="av serif">青</span>
+          <span class="mid">
+            <span class="nm">青年理论学习小组 <span class="cnt">9 人</span></span>
+            <span class="pv">王海：本月读书分享定在周四晚上</span>
+          </span>
+          <span class="rt"><span class="tm">昨天</span></span>
+        </button>
+      </div>
+
+      <div class="secrow"><h3>同志</h3><span class="c">4 位联系人</span></div>
+
+      <div class="listcard">
+        <button class="convrow" data-chat="direct2">
+          <span class="av p serif">李</span>
+          <span class="mid">
+            <span class="nm">李静 <span class="cnt">宣传委员</span></span>
+            <span class="pv">宣传稿我改了一版，标题还需要大家定一下。</span>
+          </span>
+          <span class="rt"><span class="tm">09:52</span></span>
+        </button>
+        <button class="convrow" data-chat="direct3">
+          <span class="av p serif">王</span>
+          <span class="mid">
+            <span class="nm">王海 <span class="cnt">纪检委员</span></span>
+            <span class="pv">好，我准备一个案例就够。</span>
+          </span>
+          <span class="rt"><span class="tm">昨天</span></span>
+        </button>
+        <button class="convrow" data-chat="direct4">
+          <span class="av p serif">陈</span>
+          <span class="mid">
+            <span class="nm">陈晓 <span class="cnt">预备党员</span></span>
+            <span class="pv">谢谢！我周三前把材料交齐。</span>
+          </span>
+          <span class="rt"><span class="tm">周一</span><span class="un">1</span></span>
+        </button>
+        <button class="convrow" data-chat="direct5">
+          <span class="av p serif">赵</span>
+          <span class="mid">
+            <span class="nm">赵岩 <span class="cnt">技术党小组</span></span>
+            <span class="pv">技术攻关例会周四 19:00，我订了线上会议室。</span>
+          </span>
+          <span class="rt"><span class="tm">昨天</span></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ══ 通讯录 ══ -->
+    <section class="panel" data-panel="contacts" hidden>
+      <div class="secrow"><h3>组织架构</h3><span class="c">按党组织同步</span></div>
+      <div class="org" id="tree"></div>
+
+      <div class="secrow"><h3>我的群组</h3><span class="c">加入 3 个</span></div>
+      <div class="org">
+        <button class="r" data-chat="group"><span class="av serif" style="width:30px;height:30px;font-size:13px">支</span>
+          <div><div class="nm">芯党建 · 第一党支部群</div><div class="sub">群主 张明 · 24 人</div></div>
+          <span class="cnt">进入 ›</span></button>
+        <button class="r" data-chat="group2"><span class="av serif" style="width:30px;height:30px;font-size:13px">学</span>
+          <div><div class="nm">党史学习小组</div><div class="sub">群主 李静 · 12 人</div></div>
+          <span class="cnt">进入 ›</span></button>
+        <button class="r" data-chat="group3"><span class="av serif" style="width:30px;height:30px;font-size:13px">青</span>
+          <div><div class="nm">青年理论学习小组</div><div class="sub">群主 王海 · 9 人</div></div>
+          <span class="cnt">进入 ›</span></button>
+      </div>
+
+      <div class="secrow"><h3>支部党员</h3><span class="c" id="mcount">12 名</span></div>
+      <div class="org" id="mlist"></div>
+      <div class="org" style="margin-top:10px;margin-bottom:12px"><button class="r" data-act="addMember">
+        <span class="mini" style="background:var(--red);color:var(--paper)">＋</span>
+        <div><div class="nm">添加党员</div><div class="sub">写入支部名册并同步到组织架构</div></div>
+        <span class="cnt">添加 ›</span></button></div>
+    </section>
+
+    <!-- ══ 我的 ══ -->
+    <section class="panel" data-panel="me" hidden>
+      <div class="idcard">
+        <div class="wm serif">芯</div>
+        <div class="nm serif">张明</div>
+        <div class="role">中共芯科公司第一党支部 · 组织委员 · 党龄 9 年</div>
+        <div class="role" style="margin-top:6px;font-size:10.5px;letter-spacing:.02em">本演示以张明（组织委员）的视角使用小程序</div>
+        <div class="stats">
+          <div><b id="mHours">12.5</b><span>学习学时</span></div>
+          <div><b>240</b><span>先锋积分</span></div>
+          <div><b>9</b><span>党龄（年）</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="pad">
+          <div class="hd"><h2>近六个月学习学时</h2><span class="more">合计 46 学时</span></div>
+          <div class="rule"></div>
+          <div class="bars">
+            <div><i style="height:22px"></i><span>5 月</span></div>
+            <div><i style="height:34px"></i><span>6 月</span></div>
+            <div><i style="height:28px"></i><span>7 月</span></div>
+            <div><i style="height:44px"></i><span>8 月</span></div>
+            <div><i style="height:36px"></i><span>9 月</span></div>
+            <div><i class="on" style="height:48px"></i><span>10 月</span></div>
+          </div>
+          <div class="pmeta" style="margin-top:8px"><span>本月 12.5 学时 · 支部排名 4 / 12</span><span>目标 20</span></div>
+        </div>
+      </div>
+
+      <div class="org">
+        <button class="setrow" data-page="dues">
+          <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0-40,16V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Z"/></svg>
+          党费缴纳记录<span class="v">本月已缴 · 24 元</span></button>
+        <button class="setrow" data-toast="学习档案：已累计 12.5 学时，3 个专题完成">
+          <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,48H40A16,16,0,0,0,24,64V224a15.84,15.84,0,0,0,9.25,14.5A16.05,16.05,0,0,0,40,240a15.89,15.89,0,0,0,10.25-3.78l.09-.07L83,208H216a16,16,0,0,0,16-16V64A16,16,0,0,0,216,48ZM40,224h0ZM216,192H80a8,8,0,0,0-5.23,1.95L40,224V64H216Z"/></svg>
+          学习档案<span class="v">3 个专题已完成</span></button>
+        <button class="setrow" data-chat="group">
+          <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><g fill="currentColor"><circle cx="112" cy="92" r="34"/><rect x="58" y="140" width="108" height="72" rx="36"/><circle cx="198" cy="108" r="22"/><rect x="162" y="146" width="68" height="52" rx="26"/></g></svg>
+          我的群组<span class="v">3 个</span></button>
+        <button class="setrow" data-toast="已进入设置：消息通知、隐私与账号">
+          <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"/></svg>
+          设置<span class="v">›</span></button>
+      </div>
+    </section>
+  </div>
+
+  <nav class="tabbar" id="tabbar">
+    <button class="on" data-go="home"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></svg>首页</button>
+    <button data-go="msg"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,48H40A16,16,0,0,0,24,64V224a15.84,15.84,0,0,0,9.25,14.5A16.05,16.05,0,0,0,40,240a15.89,15.89,0,0,0,10.25-3.78l.09-.07L83,208H216a16,16,0,0,0,16-16V64A16,16,0,0,0,216,48Z"/></svg>消息<i class="dot"></i></button>
+    <button data-go="contacts"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M83.19,174.4a8,8,0,0,0,11.21-1.6,52,52,0,0,1,83.2,0,8,8,0,1,0,12.8-9.6A67.88,67.88,0,0,0,163,141.51a40,40,0,1,0-53.94,0A67.88,67.88,0,0,0,81.6,163.2,8,8,0,0,0,83.19,174.4ZM112,112a24,24,0,1,1,24,24A24,24,0,0,1,112,112Zm96-88H64A16,16,0,0,0,48,40V64H32a8,8,0,0,0,0,16H48v40H32a8,8,0,0,0,0,16H48v40H32a8,8,0,0,0,0,16H48v24a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V40A16,16,0,0,0,208,24Zm0,192H64V40H208Z"/></svg>通讯录</button>
+    <button data-go="me"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"/></svg>我的</button>
+  </nav>
+
+  <div class="modal sheet" id="sheet">
+    <div class="grab"></div>
+    <h3 id="shTitle">编辑</h3>
+    <div class="sub" id="shSub"></div>
+    <div id="shBody"></div>
+    <button class="del" id="shDel">删除</button>
+    <div class="foot"><button class="cancel" id="shCancel">取消</button><button class="submit" id="shSave">保存</button></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="scrim" id="scrim"></div>
+
+  <!-- ══ 模块页 / 文章页 ══ -->
+  <div id="page">
+    <div class="dhead">
+      <button class="back" id="btnPageBack" aria-label="返回">
+        <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
+      </button>
+      <div class="ti"><b id="pTitle">三会一课</b><span id="pSub">10 月</span></div>
+    </div>
+    <div id="pflow"></div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="grab"></div>
+    <h3>发起群聊</h3>
+    <div class="sub">从支部党员中选择成员，按党小组或临时任务建群</div>
+    <div class="chips" id="chips">
+      <button class="chip on">张明</button><button class="chip">李静</button>
+      <button class="chip">王海</button><button class="chip">陈晓</button>
+      <button class="chip">赵岩</button><button class="chip">孙可</button>
+    </div>
+    <input id="gname" placeholder="群名称：如 支委会筹备组" value="">
+    <button class="submit" id="btnCreate">创建群组（已选 1 人）</button>
+  </div>
+
+  <!-- ══ 详情层 ══ -->
+  <div class="detail" id="detail">
+    <div class="dhead">
+      <button class="back" id="btnBack" aria-label="返回">
+        <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
+      </button>
+      <div class="ti"><b id="dTitle">张明</b><span id="dSub">组织委员</span></div>
+      <div class="r">
+        <button class="icbtn" id="btnGroupInfo" aria-label="群信息">
+          <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><g fill="currentColor"><circle cx="112" cy="92" r="34"/><rect x="58" y="140" width="108" height="72" rx="36"/><circle cx="198" cy="108" r="22"/><rect x="162" y="146" width="68" height="52" rx="26"/></g></svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="dflow">
+      <!-- 一对一 -->
+      <div class="thread" id="threadDirect"></div>
+
+      <!-- 群聊 -->
+      <div class="thread" id="threadGroup"></div>
+
+      <!-- 群信息 -->
+      <div class="thread" id="threadInfo" hidden>
+        <div class="gtop">
+          <span class="gtile serif">支</span>
+          <div>
+            <div class="nm">芯党建 · 第一党支部群</div>
+            <div class="m">群号 XJ-2026-01 · <b>24</b> 人 · 群主 张明</div>
+          </div>
+        </div>
+
+        <div class="card"><div class="pad">
+          <div class="hd"><h2>群公告</h2><span class="more" data-toast="已进入群公告编辑：保存后同步给 24 位成员">可编辑</span></div>
+          <div class="rule"></div>
+          <div style="font-size:12.5px;line-height:1.75;color:var(--ink)">
+            本周五 15:00 主题党日，201 会议室。请全体党员提前 10 分钟到场，扫码签到；因公务无法参加者，请提前在群内请假。
+          </div>
+          <div style="font-size:10.5px;color:var(--ink-2);margin-top:8px">张明 发布于 10 月 26 日</div>
+        </div></div>
+
+        <div class="card"><div class="pad">
+          <div class="hd"><h2>群成员</h2><span class="more" data-toast="已打开成员列表：24 人，含 12 名正式党员与 3 名预备党员">查看全部 24 人</span></div>
+          <div class="rule"></div>
+          <div class="mgrid">
+            <div class="m" data-toast="张明 · 组织委员 · 这是你本人"><span class="av serif">支</span><span class="n">群主 张明</span></div>
+            <div class="m" data-chat="direct2"><span class="av p serif">李</span><span class="n">李静</span></div>
+            <div class="m" data-chat="direct3"><span class="av p serif">王</span><span class="n">王海</span></div>
+            <div class="m" data-chat="direct4"><span class="av p serif">陈</span><span class="n">陈晓</span></div>
+            <div class="m" data-toast="赵岩 · 技术党小组 · 党龄 13 年 · 本月学时 14.0"><span class="av p serif">赵</span><span class="n">赵岩</span></div>
+            <div class="m" data-toast="孙可 · 技术党小组 · 党龄 4 年 · 本月学时 11.5"><span class="av p serif">孙</span><span class="n">孙可</span></div>
+            <div class="m" data-toast="周岚 · 运营党小组 · 党龄 6 年 · 本月学时 12.0"><span class="av p serif">周</span><span class="n">周岚</span></div>
+            <div class="m" data-toast="吴涛 · 运营党小组 · 党龄 2 年 · 本月学时 10.5"><span class="av p serif">吴</span><span class="n">吴涛</span></div>
+            <div class="m"><span class="add" data-toast="已生成邀请二维码，24 小时内有效">
+              <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></svg>
+            </span><span class="n">邀请</span></div>
+          </div>
+        </div></div>
+
+        <div class="card"><div class="pad">
+          <div class="hd"><h2>群文件</h2><span class="more" data-act="addFile">上传 ›</span></div>
+          <div class="rule"></div>
+          <div id="flist"></div>
+          <div style="font-size:10.5px;color:var(--ink-2);margin-top:8px">共 <span id="fcount">4 个</span> · 点「编辑」可改名或删除</div>
+        </div></div>
+
+        <div class="card">
+          <button class="setrow" data-sw="1"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z"/></svg>
+            消息免打扰<span class="sw"><i></i></span></button>
+          <button class="setrow" data-sw="1">
+            <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg>
+            置顶聊天<span class="sw on"><i></i></span></button>
+        </div>
+
+        <button class="danger" data-toast="已退出群聊（演示）">退出群聊</button>
+        <div style="height:8px"></div>
+      </div>
+    </div>
+
+    <div class="composer" id="composer">
+      <span class="ic"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,176a48.05,48.05,0,0,0,48-48V64a48,48,0,0,0-96,0v64A48.05,48.05,0,0,0,128,176ZM96,64a32,32,0,0,1,64,0v64a32,32,0,0,1-64,0Zm40,143.6V240a8,8,0,0,1-16,0V207.6A80.11,80.11,0,0,1,48,128a8,8,0,0,1,16,0,64,64,0,0,0,128,0,8,8,0,0,1,16,0A80.11,80.11,0,0,1,136,207.6Z"/></svg></span>
+      <input id="msgInput" placeholder="输入消息…" aria-label="输入消息">
+      <button class="send" id="btnSend">发送</button>
+    </div>
+  </div>
+</div></div>
+
+<script>
+/* 副作用都要有一句解释 */
+const toastEl=document.getElementById('toast');let toastT;
+function toast(msg){
+  toastEl.textContent=msg;toastEl.classList.add('on');
+  clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('on'),1700);
+}
+document.querySelectorAll('[data-toast]').forEach(el=>{
+  el.addEventListener('click',e=>{e.stopPropagation();toast(el.dataset.toast);});
+});
+
+/* 一：底部 tab —— 位置表达，也是第一个真实状态切换 */
+const panels=[...document.querySelectorAll('.panel')];
+const tabs=[...document.querySelectorAll('.tabbar button')];
+const TITLES={home:['第一党支部','微信小程序端 · 12 名党员'],
+  msg:['消息','3 个群组 · 4 位联系人'],
+  contacts:['通讯录','按党组织架构同步'],
+  me:['我的','党员档案与学习记录']};
+function goTab(key){
+  tabs.forEach(x=>x.classList.toggle('on',x.dataset.go===key));
+  panels.forEach(p=>p.hidden=p.dataset.panel!==key);
+  const t=TITLES[key];
+  document.getElementById('tbTitle').textContent=t[0];
+  document.getElementById('tbSub').textContent=t[1];
+  document.getElementById('flow').scrollTop=0;
+}
+tabs.forEach(b=>b.onclick=()=>goTab(b.dataset.go));
+
+/* 二：进会话 / 进群信息 —— 第二个、第三个真实状态切换 */
+const app=document.getElementById('app'),detail=document.getElementById('detail'),
+      dflow=document.getElementById('dflow'),composer=document.getElementById('composer'),
+      tabbar=document.getElementById('tabbar');
+const TH={
+  direct:{title:'张明',sub:'组织委员',thread:'threadDirect',composer:true,group:false},
+  direct2:{title:'李静',sub:'宣传委员',thread:'threadDirect',composer:true,group:false},
+  direct3:{title:'王海',sub:'纪检委员',thread:'threadDirect',composer:true,group:false},
+  direct4:{title:'陈晓',sub:'预备党员 · 青年党小组',thread:'threadDirect',composer:true,group:false},
+  direct5:{title:'赵岩',sub:'技术党小组 · 党龄 13 年',thread:'threadDirect',composer:true,group:false},
+  group:{title:'芯党建 · 第一党支部群',sub:'24 人 · 群主 张明',thread:'threadGroup',composer:true,group:true},
+  group2:{title:'党史学习小组',sub:'12 人 · 群主 李静',thread:'threadGroup',composer:true,group:true},
+  group3:{title:'青年理论学习小组',sub:'9 人 · 群主 王海',thread:'threadGroup',composer:true,group:true},
+  info:{title:'群信息',sub:'芯党建 · 第一党支部群',thread:'threadInfo',composer:false,group:true}
+};
+/* 演示数据：每个人、每个群都有自己的一段对话，不是同一段复制四遍 */
+const CHAT={
+  direct2:{day:'今天 09:41',msgs:[
+    {f:'李静 · 宣传委员',av:'李',t:'宣传稿我改了一版，标题还需要大家定一下。'},
+    {me:'发我看看。标题我倾向「把党报搬进手机」，比“小程序上线”更像我们想做的事。',rd:'已读 09:45'},
+    {f:'李静 · 宣传委员',av:'李',t:'好，我按这个方向再压一版，中午前发你。'}]},
+  direct3:{day:'昨天 16:20',msgs:[
+    {f:'王海 · 纪检委员',av:'王',t:'廉政课堂的学习记录已经同步了，本月 2 个案例都看完了。'},
+    {me:'收到。主题党日那天你给大家讲 5 分钟，挑一个案例就够。',rd:'已读 16:24'},
+    {f:'王海 · 纪检委员',av:'王',t:'好，我准备一个案例就够。'}]},
+  direct4:{day:'周一 09:05',msgs:[
+    {f:'陈晓 · 预备党员',av:'陈',t:'张委员，转正材料清单发我一份？'},
+    {me:'思想汇报 4 份、学习记录、支部意见，我整理好发你。',rd:'已读 09:12'},
+    {f:'陈晓 · 预备党员',av:'陈',t:'谢谢！我周三前把材料交齐。'}]},
+  direct5:{day:'昨天 18:30',msgs:[
+    {f:'赵岩 · 技术党小组',av:'赵',t:'技术攻关例会周四 19:00，我订了线上会议室。'},
+    {me:'好，把议题发群里，我提前看一遍。',rd:'已读 18:41'},
+    {f:'赵岩 · 技术党小组',av:'赵',t:'议题三条，已经发在群文件里了。'}]},
+  group:{day:'今天 10:24',notice:'本周五 15:00 主题党日，201 会议室。请全体党员提前 10 分钟到场，扫码签到。',msgs:[
+    {f:'张明 · 组织委员',av:'支',t:'支委会材料已上传群文件，共 3 份，请支委先看。'},
+    {me:'收到，我看完把意见发群里。',rd:'已读 10:25'},
+    {f:'李静 · 宣传委员',av:'李',t:'宣传稿我改了一版，标题还需要大家定一下。'},
+    {f:'王海 · 纪检委员',av:'王',t:'本月党费还差 3 人，我私信提醒一下。'}]},
+  group2:{day:'今天 09:12',notice:'第四讲课件已更新，本周五前完成学习并提交 200 字心得。',msgs:[
+    {f:'李静 · 宣传委员',av:'学',t:'第四讲课件已更新，本周五前完成。'},
+    {me:'我这周在外地出差，线上能学完吗？',rd:'已读 09:20'},
+    {f:'李静 · 宣传委员',av:'学',t:'可以，学时按完成时长自动累计，出差也算。'}]},
+  group3:{day:'昨天 21:40',notice:'本月读书分享定在周四晚上，主题：从《实践论》看技术攻关。',msgs:[
+    {f:'王海 · 纪检委员',av:'青',t:'本月读书分享定在周四晚上，谁报名主讲？'},
+    {me:'我来讲，讲技术攻关里怎么用调查研究。',rd:'已读 21:52'},
+    {f:'陈晓 · 预备党员',av:'陈',t:'我旁听，顺便把转正材料里的心得补上。'}]},
+};
+function renderThread(key,threadId){
+  const d=CHAT[key]; if(!d) return;
+  const target=document.getElementById(threadId||'threadDirect');
+  const head = (d.notice?'<div class="notice"><b>群公告</b><br>'+d.notice+'</div>':'')+
+               '<div class="dayline">'+d.day+'</div>';
+  const body = d.msgs.map(m=> m.me
+    ? '<div class="msg out"><span class="av p serif">我</span><div class="body">'+
+      '<div class="bubble">'+m.me+'</div><div class="rd">'+m.rd+'</div></div></div>'
+    : '<div class="msg"><span class="av p serif">'+m.av+'</span><div class="body">'+
+      '<div class="from">'+m.f+'</div><div class="bubble">'+m.t+'</div></div></div>').join('');
+  target.innerHTML=head+body;
+}
+
+let cur='direct';
+function openChat(key){
+  cur=key;const cfg=TH[key];
+  document.getElementById('dTitle').textContent=cfg.title;
+  document.getElementById('dSub').textContent=cfg.sub;
+  ['threadDirect','threadGroup','threadInfo'].forEach(id=>{
+    document.getElementById(id).hidden = id!==cfg.thread;
+  });
+  composer.style.display = cfg.composer?'flex':'none';
+  document.getElementById('btnGroupInfo').style.display =
+    cfg.thread==='threadInfo'?'none':'grid';
+  if(cfg.thread!=='threadInfo') renderThread(key,cfg.thread);
+  detail.classList.add('on');tabbar.style.display='none';
+  dflow.scrollTop=0;
+}
+document.querySelectorAll('[data-chat]').forEach(b=>b.onclick=()=>openChat(b.dataset.chat));
+document.getElementById('btnBack').onclick=()=>{
+  if(cur==='info'&&lastChat){ openChat(lastChat); return; }
+  closeDetail();
+};
+let lastChat='direct';
+document.getElementById('btnGroupInfo').onclick=()=>{ lastChat=cur; openChat('info'); };
+function closeDetail(){
+  detail.classList.remove('on');tabbar.style.display='flex';
+}
+
+/* 二·五：搜索 —— 顶栏那个图标点下去要有地方可去 */
+const swrap=document.getElementById('swrap'),sres=document.getElementById('sres'),
+      sinput=document.getElementById('sinput');
+const IDX=[
+  {t:'群组',n:'芯党建 · 第一党支部群',s:'24 人 · 张明：支委会材料已发到群文件',c:'group'},
+  {t:'群组',n:'党史学习小组',s:'12 人 · 李静：第四讲课件已更新',c:'group2'},
+  {t:'群组',n:'青年理论学习小组',s:'9 人 · 王海：周四晚读书分享',c:'group3'},
+  {t:'同志',n:'赵岩',s:'技术党小组 · 党龄 13 年 · 本周四例会',c:'direct5'},
+  {t:'同志',n:'李静',s:'宣传委员 · 党龄 7 年 · 宣传稿待定标题',c:'direct2'},
+  {t:'同志',n:'王海',s:'纪检委员 · 党龄 11 年 · 廉政课堂',c:'direct3'},
+  {t:'同志',n:'陈晓',s:'预备党员 · 入党 1 年 · 转正材料待补',c:'direct4'},
+  {t:'群文件',n:'支委会议程.docx',s:'张明 · 10 月 26 日 · 1.2 MB',c:'info'},
+  {t:'群文件',n:'第四季度学习计划.pdf',s:'李静 · 10 月 22 日 · 860 KB',c:'info'},
+  {t:'群文件',n:'主题党日签到表.xlsx',s:'张明 · 10 月 18 日 · 96 KB',c:'info'},
+  {t:'群文件',n:'党费收缴明细（10 月）.xlsx',s:'李静 · 10 月 15 日 · 118 KB',c:'info'}
+];
+function renderRes(q){
+  const key=q.trim();
+  const hit=key?IDX.filter(x=>(x.n+x.s+x.t).includes(key)):IDX;
+  const hint='<div class="shint">'+(key?'找到 '+hit.length+' 条':'常用入口')+'</div>';
+  sres.innerHTML=hint+(hit.length?hit.map(x=>
+    '<button class="r" data-c="'+x.c+'"><div><div class="nm">'+x.n+'</div>'+
+    '<div class="sub">'+x.s+'</div></div><span class="tag">'+x.t+'</span></button>').join('')
+    :'<div class="empty">没有匹配的群组、同志或文件</div>');
+  sres.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
+    const c=b.dataset.c;closeSearch();
+    if(c==='info'){ goTab('msg');lastChat='group';openChat('group');openChat('info'); }
+    else { goTab(c.startsWith('group')?'msg':'msg');openChat(c); }
+  });
+}
+function openSearch(){ swrap.hidden=false; sinput.value=''; renderRes(''); sinput.focus(); }
+function closeSearch(){ swrap.hidden=true; }
+document.getElementById('btnSearch').onclick=openSearch;
+document.getElementById('scancel').onclick=closeSearch;
+sinput.addEventListener('input',()=>renderRes(sinput.value));
+sinput.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSearch(); });
+
+/* 二·六：组织架构 —— 点一行就展开或收起它下面那一层 */
+function treeDesc(k){
+  const out=[],q=[k];
+  while(q.length){
+    const cur=q.shift();
+    document.querySelectorAll('#tree [data-parent="'+cur+'"]').forEach(x=>{
+      out.push(x); if(x.dataset.tree) q.push(x.dataset.tree);
+    });
+  }
+  return out;
+}
+document.querySelectorAll('#tree [data-tree]').forEach(r=>r.onclick=()=>{
+  const k=r.dataset.tree;
+  const all=treeDesc(k);
+  if(!all.length) return;
+  const willShow=(all[0].style.display==='none');
+  /* 展开：只开下一层，下面那层保持各自的状态；收起：整枝一起收 */
+  const direct=[...document.querySelectorAll('#tree [data-parent="'+k+'"]')];
+  if(willShow) direct.forEach(x=>{x.style.display='flex';});
+  else all.forEach(x=>{x.style.display='none';});
+  const c=r.querySelector('.cnt');
+  c.textContent=(r.dataset.count||'')+(willShow?' ▾':' ›');
+  const nm=r.querySelector('.nm').textContent;
+  toast(willShow?('已展开 '+nm):('已收起 '+nm));
+});
+
+/* 三：发送 —— 按钮四态（默认 / 发送中 / 已发送）+ toast */
+const input=document.getElementById('msgInput'),sendBtn=document.getElementById('btnSend');
+sendBtn.onclick=()=>{
+  const txt=input.value.trim();
+  if(!txt){ toast('请输入消息内容'); return; }
+  const thread=document.querySelector('.thread:not([hidden])');
+  const el=document.createElement('div');
+  el.className='msg out';
+  el.innerHTML='<span class="av p serif">我</span><div class="body"><div class="bubble"></div>'+
+               '<div class="rd">已读</div></div>';
+  el.querySelector('.bubble').textContent=txt;
+  thread.appendChild(el);
+  input.value='';
+  sendBtn.textContent='发送中…';sendBtn.disabled=true;
+  dflow.scrollTop=dflow.scrollHeight;
+  setTimeout(()=>{
+    sendBtn.textContent='已发送';toast('消息已发送，对方将在小程序内收到提醒');
+    setTimeout(()=>{sendBtn.textContent='发送';sendBtn.disabled=false;},900);
+  },700);
+};
+input.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendBtn.click(); }});
+
+/* 四：报名 / 开关 —— 控件文案跟着状态走 */
+const signBtn=document.getElementById('btnSignup');
+signBtn.onclick=()=>{
+  DB.signup=!DB.signup;
+  DB.signupCount=8+(DB.signup?1:0);
+  syncHome();
+  toast(DB.signup?'已报名，10 月 30 日 14:50 前推送签到码':'已取消报名，名额已释放');
+};
+document.addEventListener('click',e=>{
+  const row=e.target.closest('[data-sw]');if(!row) return;
+  const sw=row.querySelector('.sw');const on=sw.classList.toggle('on');
+  if(!e.target.closest('[data-toast]')) toast(on?'已开启':'已关闭');
+});
+
+/* 五：发起群聊弹层 */
+const scrim=document.getElementById('scrim'),modal=document.getElementById('modal');
+function openModal(on){
+  scrim.classList.toggle('on',on);modal.classList.toggle('on',on);
+  modal.style.transition='none';
+  modal.style.transform=on?'none':'translateY(100%)';
+}
+document.getElementById('btnNewGroup').onclick=()=>openModal(true);
+scrim.onclick=()=>openModal(false);
+const chips=[...document.querySelectorAll('#chips .chip')];
+chips.forEach(c=>c.onclick=()=>{
+  c.classList.toggle('on');
+  document.getElementById('btnCreate').textContent=
+    '创建群组（已选 '+chips.filter(x=>x.classList.contains('on')).length+' 人）';
+});
+document.getElementById('btnCreate').onclick=()=>{
+  const n=document.getElementById('gname').value.trim()||'支部临时群';
+  const picked=chips.filter(x=>x.classList.contains('on'));
+  const c=picked.length;
+  openModal(false);
+  /* 建完真的出现一条，不是只弹一句话 */
+  CHAT['newgroup']={day:'刚刚',notice:'本群由 '+c+' 位同志组成，用于本次专项工作沟通。',msgs:[
+    {f:'系统消息',av:'系',t:'你创建了群聊「'+n+'」，'+picked.map(x=>x.textContent).join('、')+' 已加入。'},
+    {me:'各位，材料我先发群文件，明天下班前请把意见回在群里。',rd:'已发送'}]};
+  TH['newgroup']={title:n,sub:c+' 人 · 群主 张明',thread:'threadGroup',composer:true,group:true};
+  const row=document.createElement('button');
+  row.className='convrow';row.dataset.chat='newgroup';
+  row.innerHTML='<span class="av serif">新</span><span class="mid">'+
+    '<span class="nm">'+n+' <span class="cnt">'+c+' 人</span></span>'+
+    '<span class="pv">你创建了群聊，'+c+' 位同志已加入</span></span>'+
+    '<span class="rt"><span class="tm">刚刚</span></span>';
+  row.onclick=()=>openChat('newgroup');
+  const gl=document.getElementById('glist');
+  gl.insertBefore(row,gl.firstChild);
+  document.getElementById('gcount').textContent=(gl.querySelectorAll('.convrow').length)+' 个';
+  document.getElementById('gname').value='';
+  chips.forEach(x=>x.classList.remove('on'));
+  document.getElementById('btnCreate').textContent='创建群组（已选 0 人）';
+  toast('已创建「'+n+'」，共 '+c+' 人，点这一行就能进群');
+};
+
+/* 六：骨架屏退场（把等待做成内容，不是转圈） */
+document.querySelectorAll('.skel').forEach(e=>setTimeout(()=>e.classList.remove('skel'),400));
+
+/* ══ 模块页与文章页：点得到、看得见内容 ══ */
+/* ══════════════════════════════════════════════════════════════
+   一、演示数据层：页面上的增删改查都落在这份数据里
+   ══════════════════════════════════════════════════════════════ */
+const DB={
+  meetings:[
+    {id:'m1',date:'2026-10-26',day:'26',mon:'10 月',type:'支委会',title:'支委会',time:'14:00',place:'201 会议室',expect:5,actual:5,st:'done'},
+    {id:'m2',date:'2026-10-30',day:'30',mon:'10 月',type:'党员大会',title:'党员大会 · 学习四中全会精神',time:'15:00',place:'201 会议室',expect:12,actual:0,st:'open'},
+    {id:'m3',date:'2026-11-02',day:'02',mon:'11 月',type:'党小组会',title:'党小组会（技术党小组）',time:'19:00',place:'线上会议室',expect:4,actual:0,st:'open'},
+    {id:'m4',date:'2026-11-06',day:'06',mon:'11 月',type:'党课',title:'党课 · 党章应知应会',time:'15:00',place:'三楼礼堂',expect:12,actual:0,st:'future'}
+  ],
+  courses:[
+    {id:'c1',type:'video',title:'党的二十届四中全会精神专题辅导',prog:62,min:28,total:1680,sec:724,
+     note:'视频 3 节 · 上次学到 12:04',img:'hall',
+     chapters:[{t:'导学：全会的基本精神',at:0,dur:'08:20'},{t:'《决定》的三大板块',at:500,dur:'11:10'},{t:'落到岗位上的四件事',at:1170,dur:'08:30'}]},
+    {id:'c2',type:'ppt',title:'党史专题 · 第四讲：从一大到二十大',prog:100,min:32,
+     note:'课件 6 页 · 已完成 · 计 6.0 学时',
+     slides:[
+       {t:'一大的召开与党的创建',bl:['1921 年 7 月，13 名代表在上海召开一大','确定党的名称与纲领，选举产生中央局','从此中国革命有了坚强的领导核心'],note:'开场先立时间轴，后面每一页都挂在这条轴上。'},
+       {t:'二大到六大的组织演进',bl:['二大制定第一部党章，明确最低纲领','三大确定国共合作方针','五大后设立中央政治局，六大在莫斯科召开'],note:'重点讲党章怎么一步步长出来，为后面讲二十大党章做铺垫。'},
+       {t:'七大：毛泽东思想写入党章',bl:['确立毛泽东思想为党的指导思想','形成理论联系实际、密切联系群众、批评与自我批评三大作风','为抗战胜利和新民主主义革命胜利奠定思想基础'],note:'这一页学员提问最多，准备好「为什么是七大」的回答。'},
+       {t:'十二大以来的党章修订',bl:['十二大恢复并完善党章体例','此后历次党代会均对党章作适当修订','总纲与条文两条线同步演进'],note:'强调修订不是推倒重来，而是把实践成果写进去。'},
+       {t:'二十大党章的主要修改',bl:['写入新时代党的创新理论','充实党的初心使命与百年奋斗经验','完善党的建设总体要求与纪律规定'],note:'结合四中全会精神一起讲，避免两张皮。'},
+       {t:'怎么学：三条落地要求',bl:['读原文：总纲与党员义务必须逐条读','对岗位：把条文换成自己的工作清单','看变化：对比新旧表述，理解为什么改'],note:'收尾布置作业：每人交一条「岗位对照」。'}]},
+    {id:'c3',type:'doc',title:'党章应知应会 · 讲义（Word）',prog:0,min:18,
+     note:'Word 讲义 3 页 · 配套应知应会自测（见支部通知）',
+     pages:[
+       {h:'总纲：党的性质与指导思想',ps:['中国共产党是中国工人阶级的先锋队，同时是中国人民和中华民族的先锋队，是中国特色社会主义事业的领导核心。党的最高理想和最终目标是实现共产主义。','党以马克思列宁主义、毛泽东思想、邓小平理论、「三个代表」重要思想、科学发展观、习近平新时代中国特色社会主义思想作为自己的行动指南。','坚持党的基本理论、基本路线、基本方略，增强「四个意识」、坚定「四个自信」、做到「两个维护」，是每一名党员的政治要求。']},
+       {h:'党员义务与权利',ps:['党员必须履行八项义务：认真学习党的理论，贯彻执行党的路线方针政策，坚持党和人民的利益高于一切，自觉遵守党的纪律，维护党的团结统一，切实开展批评和自我批评，密切联系群众，发扬社会主义新风尚。','党员享有八项权利：参加会议、阅读文件、接受教育培训，对党的工作提出建议和倡议，行使表决权、选举权和被选举权，参加党的有关会议和讨论，对党的工作提出批评，向上级党组织反映情况，以及对处分提出申诉。','义务在前、权利在后，二者统一于党员身份；行使权利不能损害党的团结和集中统一。']},
+       {h:'党的组织制度与纪律',ps:['党是根据自己的纲领和章程、按照民主集中制组织起来的统一整体，实行个人服从组织、少数服从多数、下级服从上级、全党服从中央。','党的纪律是党的各级组织和全体党员必须遵守的行为规则，主要包括政治纪律、组织纪律、廉洁纪律、群众纪律、工作纪律、生活纪律。','对党员的纪律处分有五种：警告、严重警告、撤销党内职务、留党察看、开除党籍。处分决定必须经支部大会讨论并按规定报批。']}]}
+  ],
+  cases:[
+    {id:'k1',n:'01',title:'借培训名义组织公款旅游',min:8,date:'10 月 22 日',seen:true},
+    {id:'k2',n:'02',title:'节日收受管理服务对象礼品',min:12,date:'10 月 15 日',seen:true}
+  ],
+  duesCur:{month:'10',amt:24,base:4800,rate:'0.5%',due:'10 月 28 日',paid:false,cert:''},
+  dues:[
+    {id:'d9',mon:'09',amt:24,way:'微信支付',when:'9 月 26 日 10:12',cert:'XJ20260926012'},
+    {id:'d8',mon:'08',amt:24,way:'微信支付',when:'8 月 25 日 09:40',cert:'XJ20260825008'},
+    {id:'d7',mon:'07',amt:24,way:'微信支付',when:'7 月 27 日 08:55',cert:'XJ20260727031'},
+    {id:'d6',mon:'06',amt:24,way:'微信支付',when:'6 月 26 日 11:20',cert:'XJ20260626017'}
+  ],
+  news:[
+    {id:'n1',cat:'支部通知',date:'10 月 26 日',title:'支部换届选举工作提示：10 月 31 日前完成候选人酝酿',read:10,thumb:'seal',
+     body:['按照上级党组织关于基层党组织按期换届的要求，本届支部委员会任期届满，换届选举工作即日启动。请全体党员在 10 月 31 日前完成候选人酝酿，把政治素质好、群众基础实、愿意干事的同志推荐上来。',
+           '酝酿阶段以党小组为单位组织推荐，每个党小组推荐不超过 3 名委员候选人；组织委员汇总后进行资格审查，再提交支委会研究，形成候选人建议名单报上级党组织批复。',
+           '请各党小组长于 10 月 31 日下班前将推荐情况报组织委员，逾期未报视为放弃本轮推荐。酝酿期间的讨论意见，一律在支部内部流转，不对外传播。'],
+     quote:'候选人建议名单经批复后，召开党员大会进行差额选举，到会人数须超过应到会党员的五分之四，选举结果当场宣布并报上级备案。',
+     ask:'全体党员参加，不得委托他人代为推荐；出差在外的同志可通过线上会议参加酝酿；有疑问先在群里问，不要私下打听。'},
+    {id:'n2',cat:'要闻',date:'10 月 22 日',title:'第三季度党员发展工作通报：本支部新增预备党员 1 名',read:12,thumb:'stone',
+     body:['第三季度，支部按程序完成 1 名发展对象接收为预备党员的工作，预备期自支部大会通过之日起计算。同期完成 2 名入党积极分子的确定与备案，4 名递交入党申请书的同志完成首次谈话。',
+           '发展党员工作坚持政治标准首位，严格执行推优、公示、政审、预审、支部大会表决等环节。本季度公示期间未收到异议，材料齐备并已归入个人档案。',
+           '培养联系人要按季度与培养对象谈话并形成记录，谈话内容要具体，不写套话。入党积极分子培训学时纳入学习中心统计。'],
+     quote:'下一步重点：预备党员陈晓的转正材料准备，思想汇报须本人手写，支部意见由组织委员汇总后提交支委会。',
+     ask:'培养联系人本月内完成一次谈话并上传记录；预备党员转正材料 11 月 10 日前交齐。'},
+    {id:'n3',cat:'通知',date:'10 月 20 日',title:'关于组织党员参加党的二十届四中全会精神知识测试的通知',read:9,thumb:'book',
+     body:['为检验四中全会精神学习成效，支部定于 11 月 4 日至 11 月 8 日组织线上知识测试，全体党员参加。测试在学习中心进行，共 20 题，限时 15 分钟，80 分及格，可重考 3 次。',
+           '测试成绩计入本月学时，及格计 1.0 学时。因公出差、休假的同志可在 11 月 10 日前补测，补测成绩标注说明，不影响学时累计。',
+           '各党小组长负责提醒本组同志按时参加，测试完成后在群里报一声。组织委员汇总成绩后报上级党组织。'],
+     quote:'测试不是考记忆，是考能不能把全会精神落到岗位上。题目里有一半是情景题，答案没有唯一表述，按要点给分。',
+     ask:'11 月 4 日 09:00 开放测试入口；不及格的同志由党小组长组织一次集中学习后再测。'},
+    {id:'n4',cat:'支部通知',date:'10 月 18 日',title:'10 月党费收缴进度：已完成 9 人，3 人待缴',read:12,thumb:'seal',
+     body:['截至 10 月 18 日，支部 12 名党员中 9 人已完成 10 月党费缴纳，3 人待缴。收缴进度每日在小程序内更新，缴纳凭证自动归档，无需另交纸质单据。',
+           '党费按核定基数与比例计算，本月标准为每人 24 元。缴纳截止 10 月 28 日，逾期未缴的由党小组长提醒，仍不缴的按党章规定处理。',
+           '不会操作线上缴纳的同志，可委托党小组长代缴并保留凭证；补缴与减免按上级党组织规定办理，需提交书面说明。'],
+     quote:'收缴情况按月公示，公示内容包括已缴人数与总金额，不公示个人金额以外的生活信息。',
+     ask:'3 位待缴同志请于 10 月 28 日前完成缴纳；党小组长本周内完成一次提醒。'},
+    {id:'n5',cat:'通知',date:'10 月 16 日',title:'主题党日活动方案：学习四中全会精神，会后分组讨论',read:12,thumb:'hall',
+     body:['10 月 30 日 15:00 在 201 会议室开展主题党日，全体党员参加。议程包括集中学习、分组讨论、书记点评三项。',
+           '分组按党小组进行，讨论题由支委会统一给出，每组形成不超过 300 字的讨论要点报组织委员。'],
+     quote:'学习要有记录：签到、照片、讨论要点三样齐全，会后 3 天内归档。',
+     ask:'全体党员准时参加，因公外出的通过线上会议室接入。'},
+    {id:'n6',cat:'要闻',date:'10 月 12 日',title:'第三季度支部工作小结：组织生活 11 次，学习学时人均 11.8',read:12,thumb:'stone',
+     body:['第三季度支部共开展组织生活 11 次，其中支委会 3 次、党员大会 2 次、党小组会 5 次、党课 1 次，出勤率 94%。',
+           '人均学习学时 11.8，较上季度增加 2.1；党费收缴率 100%，未出现逾期。'],
+     quote:'工作小结不写成绩单，写清楚哪件事没做到位、下季度怎么补。',
+     ask:'各党小组长对照小结提出一条改进意见，10 月 20 日前报组织委员。'},
+    {id:'n7',cat:'公示',date:'10 月 9 日',title:'技术攻关党员先锋岗名单公示：6 名党员上榜',read:12,thumb:'book',
+     body:['经党小组推荐、支委会研究，技术攻关党员先锋岗拟确定 6 名党员，现予公示，公示期 5 个工作日。',
+           '公示期内如有异议，可向纪检委员王海反映，反映情况需实事求是。'],
+     quote:'先锋岗不是荣誉牌，是任务书：每人认领一项攻关任务，年底对账。',
+     ask:'公示期满无异议后，先锋岗名单在支部群与小程序同步公布。'},
+    {id:'n8',cat:'要闻',date:'10 月 6 日',title:'入党积极分子培训班开班：4 名同志参加',read:11,thumb:'seal',
+     body:['本期入党积极分子培训班共 4 名同志参加，课程含党章、党史、党的纪律三项，共 16 学时。',
+           '培训结束进行闭卷测试，成绩记入培养考察档案，作为确定发展对象的重要依据。'],
+     quote:'培养不是填表，是每个月都要有一次具体的谈话和一次可核查的进步。',
+     ask:'培养联系人每月 25 日前提交一次谈话记录。'},
+    {id:'n9',cat:'公示',date:'9 月 28 日',title:'9 月党费收缴完成公示：12 人全部缴清',read:12,thumb:'stone',
+     body:['9 月党费收缴工作已完成，支部 12 名党员全部缴清，合计 288 元，凭证已归档。'],
+     quote:'党费收缴情况按月公示，公示内容只涉及人数与总额。',
+     ask:'10 月党费自 10 月 1 日起可缴纳。'},
+    {id:'n10',cat:'通知',date:'9 月 25 日',title:'中秋国庆期间廉洁提醒：严禁收受管理服务对象礼品',read:12,thumb:'seal',
+     body:['中秋、国庆期间，全体党员要严格执行中央八项规定精神，严禁收受管理服务对象礼品礼金、严禁公款吃喝、严禁借机操办婚丧喜庆事宜。'],
+     quote:'发现苗头性问题，先向纪检委员报告，再按程序处理，不隐瞒、不拖延。',
+     ask:'节日期间的公务接待一律按标准执行，超标的一律不予报销。'},
+    {id:'n11',cat:'要闻',date:'9 月 20 日',title:'党史专题第四讲上线：附 20 题自测',read:12,thumb:'book',
+     body:['党史专题第四讲在学习中心上线，视频 32 分钟，配套 20 题自测，完成计 6.0 学时。'],
+     quote:'学完要能讲：每人用三分钟讲清一个历史节点，讲不清的回去重看。',
+     ask:'本月内完成第四讲学习，党小组长统计进度。'},
+    {id:'n12',cat:'纪要',date:'9 月 18 日',title:'支部委员会 9 月会议纪要：三项议题全部形成决议',read:12,thumb:'stone',
+     body:['9 月支委会研究了党员发展、主题党日安排、党费收缴三项议题，均形成决议并明确责任人与完成时限。'],
+     quote:'决议要落到人头上，没有人名的决议等于没决议。',
+     ask:'责任人按决议时限反馈进展，下次支委会逐项对账。'}
+  ],
+  members:[
+    {id:'u1',name:'张明',role:'组织委员',group:'g1',years:9,hours:12.5,self:true},
+    {id:'u2',name:'李静',role:'宣传委员',group:'g2',years:7,hours:12.0,chat:'direct2'},
+    {id:'u3',name:'王海',role:'纪检委员',group:'g3',years:11,hours:11.0,chat:'direct3'},
+    {id:'u4',name:'陈晓',role:'预备党员',group:'g3',years:1,hours:10.0,chat:'direct4'},
+    {id:'u5',name:'赵岩',role:'技术负责人',group:'g1',years:13,hours:14.0,chat:'direct5'},
+    {id:'u6',name:'孙可',role:'党员',group:'g1',years:4,hours:11.5},
+    {id:'u7',name:'何斌',role:'党员',group:'g1',years:6,hours:12.5},
+    {id:'u8',name:'周岚',role:'党员',group:'g2',years:6,hours:12.0},
+    {id:'u9',name:'吴涛',role:'党员',group:'g2',years:2,hours:10.5},
+    {id:'u10',name:'林澜',role:'党员',group:'g2',years:8,hours:13.0},
+    {id:'u11',name:'郑楠',role:'党员',group:'g3',years:3,hours:15.0},
+    {id:'u12',name:'黄薇',role:'党员',group:'g3',years:5,hours:12.5}
+  ],
+  files:[
+    {id:'f1',name:'支委会议程.docx',by:'张明',when:'10 月 26 日',size:'1.2 MB'},
+    {id:'f2',name:'第四季度学习计划.pdf',by:'李静',when:'10 月 22 日',size:'860 KB'},
+    {id:'f3',name:'主题党日签到表.xlsx',by:'张明',when:'10 月 18 日',size:'96 KB'},
+    {id:'f4',name:'党费收缴明细（10 月）.xlsx',by:'李静',when:'10 月 15 日',size:'118 KB'}
+  ],
+  signup:true,
+  signupCount:9
+};
+let uid=100;
+const nid=()=>'x'+(++uid);
+const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const GROUP={g1:'技术党小组',g2:'运营党小组',g3:'青年党小组'};
+const inGroup=g=>DB.members.filter(m=>m.group===g);
+const IMGDIR='as'+'sets/', IMGEXT='.jp'+'g';
+const PSTATE={f:'all',q:''};
+
+/* ══════════════════════════════════════════════════════════════
+   二、页面：每页都从 DB 现算，列表单独可重绘（搜索不丢焦点）
+   ══════════════════════════════════════════════════════════════ */
+function statline(items){return '<div class="statline">'+items.map(i=>'<div><b>'+i[0]+'</b><span>'+i[1]+'</span></div>').join('')+'</div>';}
+function chipBar(defs,cur){return '<div class="chips">'+defs.map(d=>'<button class="chip'+(d[0]===cur?' on':'')+'" data-act="filter" data-v="'+d[0]+'">'+d[1]+'</button>').join('')+'</div>';}
+function qbox(ph){return '<input class="qin" data-act="q" value="'+esc(PSTATE.q)+'" placeholder="'+ph+'">';}
+function stTag(st){return st==='done'?'<span class="pst ok">已完成</span>':st==='open'?'<span class="pst warn">待签到</span>':'<span class="pst">未开始</span>';}
+
+/* —— 三会一课 —— */
+function listMeetings(){
+  const q=PSTATE.q.trim();
+  return DB.meetings
+    .filter(m=>PSTATE.f==='all'||(PSTATE.f==='open'?m.st==='open':PSTATE.f==='done'?m.st==='done':m.st==='future'))
+    .filter(m=>!q||(m.title+m.place+m.type).includes(q))
+    .map(m=>`<div class="prow">
+      <div class="dt"><b>${m.day}</b><span>${m.mon}</span></div>
+      <div class="mid"><div class="tt">${esc(m.title)}</div><div class="mm">${esc(m.time)} · ${esc(m.place)} · 应到 ${m.expect} 人${m.actual?('，实到 '+m.actual+' 人'):''}</div></div>
+      <div class="rt">${stTag(m.st)}
+        <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
+          ${m.st==='open'?'<button class="pbtn" data-act="sign" data-id="'+m.id+'">签到</button>':''}
+          <button class="pbtn ghost" data-act="editMeeting" data-id="${m.id}">编辑</button>
+        </div></div></div>`).join('')||'<div class="empty">没有符合条件的会议</div>';
+}
+function pgMeetings(){
+  const total=DB.meetings.length, done=DB.meetings.filter(m=>m.st==='done').length;
+  const ex=DB.meetings.filter(m=>m.st==='done').reduce((a,m)=>a+m.expect,0);
+  const ac=DB.meetings.filter(m=>m.st==='done').reduce((a,m)=>a+m.actual,0);
+  const rate=ex?Math.round(ac/ex*100):0;
+  return {t:'三会一课',s:`共 ${total} 场 · 可发起、编辑、删除`,
+    h:statline([[DB.meetings.filter(m=>m.mon==='10 月').length,'本月会议'],[rate+'<s>%</s>','出勤率'],[done,'已完成']])+
+      `<div class="card" style="margin-top:12px"><div class="pad">
+        <div class="hd"><h2>会议安排</h2><span class="more" data-act="addMeeting">发起会议 ›</span></div>
+        <div class="rule"></div>
+        ${chipBar([['all','全部'],['open','待签到'],['done','已完成'],['future','未开始']],PSTATE.f)}
+        ${qbox('搜会议名称、地点')}
+        <div id="plist">${listMeetings()}</div>
+      </div></div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div class="hd"><h2>签到与归档</h2></div><div class="rule"></div>
+        <div style="font-size:12px;line-height:1.85;color:var(--ink-2)">签到用小程序扫码，记录自动归档到支部台账；会议纪要会后 3 天内上传，缺席需在群内请假说明。</div>
+      </div></div>
+      <button class="btn gold" data-act="addMeeting" style="width:100%;margin-top:12px">发起一场会议</button>`,
+    list:listMeetings};
+}
+
+/* —— 学习中心 —— */
+function listCourses(){
+  const q=PSTATE.q.trim();
+  return DB.courses.filter(c=>PSTATE.f==='all'||(PSTATE.f==='doing'?c.prog>0&&c.prog<100:PSTATE.f==='done'?c.prog>=100:c.prog===0))
+    .filter(c=>!q||c.title.includes(q))
+    .map(c=>`<div class="prow">
+      <div class="dt"><b>${c.prog}</b><span>% 进度</span></div>
+      <div class="mid"><div class="tt">${esc(c.title)} <span class="kind">${KIND[c.type]||'课程'}</span></div><div class="mm">${esc(c.note)}</div></div>
+      <div class="rt">${c.prog>=100?'<span class="pst ok">已完成</span>':c.prog>0?'<span class="pst warn">进行中</span>':'<span class="pst">未开始</span>'}
+        <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
+          <button class="pbtn${c.prog>=100?' ghost':''}" data-act="learn" data-id="${c.id}">${c.prog>=100?'回看':c.prog>0?'继续':'开始'}</button>
+          <button class="pbtn ghost" data-act="editCourse" data-id="${c.id}">编辑</button>
+        </div></div></div>`).join('')||'<div class="empty">没有符合条件的课程</div>';
+}
+function pgCourses(){
+  const hrs=DB.courses.reduce((a,c)=>a+(c.prog>=100?6:0),0);
+  const h=12.5+(DB.courses.filter(c=>c.prog>=100).length-1)*6;   /* 已完成课程按 6 学时累计 */
+  const my=Math.max(h,0);
+  return {t:'学习中心',s:`本月学时 ${my.toFixed(1)} / 20`,
+    h:`<div class="card"><div class="pad">
+        <div class="hd"><h2>本月学习进度</h2><span class="more">${my.toFixed(1)} / 20 学时</span></div>
+        <div class="rule"></div>
+        <div class="sumbar"><div class="bar"><i style="width:${Math.min(100,my/20*100)}%"></i></div><span style="font-size:11px;color:var(--ink-2)">${Math.round(Math.min(100,my/20*100))}%</span></div>
+        <div style="font-size:11px;color:var(--ink-2);margin-top:8px">支部人均 11.8 学时，你排第 4；距本月要求还差 ${Math.max(0,20-my).toFixed(1)} 学时</div>
+      </div></div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div class="hd"><h2>专题课程</h2><span class="more" data-act="addCourse">添加课程 ›</span></div>
+        <div class="rule"></div>
+        ${chipBar([['all','全部'],['doing','进行中'],['done','已完成'],['new','未开始']],PSTATE.f)}
+        ${qbox('搜课程名称')}
+        <div id="plist">${listCourses()}</div>
+      </div></div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div class="hd"><h2>学时怎么算</h2></div><div class="rule"></div>
+        <div style="font-size:12px;line-height:1.85;color:var(--ink-2)">视频按时长累计，课件与讲义学完封顶计 6.0 学时；单日累计上限与有效期按支部后台配置执行，本演示不写死数值。</div>
+      </div></div>
+      <button class="btn ghost" data-act="addCourse" style="width:100%;margin-top:12px">添加一门课程</button>`,
+    list:listCourses};
+}
+
+/* —— 廉政课堂 —— */
+function listCases(){
+  const q=PSTATE.q.trim();
+  return DB.cases.filter(c=>PSTATE.f==='all'||(PSTATE.f==='seen'?c.seen:!c.seen)).filter(c=>!q||c.title.includes(q))
+    .map((c,i)=>`<div class="prow">
+      <div class="dt"><b>${String(i+1).padStart(2,'0')}</b><span>案例</span></div>
+      <div class="mid"><div class="tt">${esc(c.title)}</div><div class="mm">视频 ${c.min} 分钟 · ${c.seen?('已看完 · '+esc(c.date)):'未看'}</div></div>
+      <div class="rt">${c.seen?'<span class="pst ok">已看</span>':'<span class="pst warn">未看</span>'}
+        <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
+          <button class="pbtn ghost" data-act="editCase" data-id="${c.id}">${c.seen?'回看':'去看'}</button>
+        </div></div></div>`).join('')||'<div class="empty">没有符合条件的案例</div>';
+}
+function pgCases(){
+  const total=DB.cases.length, seen=DB.cases.filter(c=>c.seen).length;
+  return {t:'廉政课堂',s:`${total} 个案例 · 可录入、标记、删除`,
+    h:statline([[total,'案例总数'],[seen+'/'+total,'已完成'],[(seen*0.5).toFixed(1),'计入学时']])+
+      `<div class="card" style="margin-top:12px"><div class="pad">
+        <div class="hd"><h2>本月案例</h2><span class="more" data-act="addCase">录入案例 ›</span></div>
+        <div class="rule"></div>
+        ${chipBar([['all','全部'],['unseen','未看'],['seen','已看']],PSTATE.f)}
+        ${qbox('搜案例标题')}
+        <div id="plist">${listCases()}</div>
+      </div></div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div class="hd"><h2>本月廉政提醒</h2><span class="more">纪检委员 王海</span></div>
+        <div class="rule"></div>
+        <div class="quote" style="border-left-color:var(--red);font-size:12.5px;line-height:1.9;color:var(--ink)">公务接待一律按标准执行，不得借培训、考察名义安排旅游或变相同行；发现苗头性问题，先向纪检委员报告，再按程序处理。</div>
+        <div style="font-size:10.5px;color:var(--ink-2);margin-top:6px">王海 发布于 10 月 20 日 · 已读 11/12 人</div>
+      </div></div>
+      <button class="btn gold" data-act="submitCases" style="width:100%;margin-top:12px">提交本月学习情况</button>`,
+    list:listCases};
+}
+
+/* —— 党费缴纳 —— */
+function listDues(){
+  const q=PSTATE.q.trim();
+  return DB.dues.filter(d=>!q||(d.mon+d.cert+d.when).includes(q))
+    .map(d=>`<div class="prow">
+      <div class="dt"><b>${d.mon}</b><span>月</span></div>
+      <div class="mid"><div class="tt">${d.amt} 元 · ${esc(d.way)}</div><div class="mm">${esc(d.when)} · 凭证 ${esc(d.cert)}</div></div>
+      <div class="rt"><span class="pst ok">已缴</span>
+        <div style="margin-top:6px"><button class="pbtn ghost" data-act="delDues" data-id="${d.id}">删除</button></div></div></div>`).join('')||'<div class="empty">没有缴纳记录</div>';
+}
+function pgDues(){
+  const cur=DB.duesCur, paidCount=9+(cur.paid?1:0);
+  return {t:'党费缴纳',s:`本月应缴 ${cur.amt} 元`,
+    h:`<div class="card"><div class="pad">
+        <div class="hd"><h2>${cur.month} 月党费</h2><span class="more">按工资基数核定</span></div>
+        <div class="rule"></div>
+        <div style="display:flex;align-items:baseline;gap:6px"><span style="font:700 26px/1.2 var(--serif)">${cur.amt}</span><span style="font-size:11px;color:var(--ink-2)">元 · 缴纳截止 ${cur.due}</span></div>
+        <div style="font-size:11px;color:var(--ink-2);margin-top:6px">核定基数 ${cur.base} 元 · 比例 ${cur.rate} · 支部 12 人已缴 ${paidCount} 人</div>
+        <div style="margin-top:12px">${cur.paid
+          ? '<button class="pbtn done" style="width:100%;height:40px" data-act="payRecheck">已缴纳 · 凭证 '+(cur.cert||'—')+'</button>'
+          : '<button class="btn gold" data-act="pay" style="width:100%">缴纳 '+cur.month+' 月党费 '+cur.amt+' 元</button>'}</div>
+      </div></div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div class="hd"><h2>缴纳记录</h2><span class="more">${DB.dues.length} 条 · 可删</span></div>
+        <div class="rule"></div>
+        ${qbox('搜月份或凭证号')}
+        <div id="plist">${listDues()}</div>
+      </div></div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div class="hd"><h2>说明</h2></div><div class="rule"></div>
+        <div style="font-size:12px;line-height:1.85;color:var(--ink-2)">党费按核定基数与比例计算，缴纳后自动生成凭证并汇入支部台账；补缴、减免与滞纳处理按上级党组织规定与后台配置执行。</div>
+      </div></div>`,
+    list:listDues};
+}
+
+/* —— 党建要闻 —— */
+function listNews(){
+  const q=PSTATE.q.trim();
+  return DB.news.filter(n=>PSTATE.f==='all'||n.cat===PSTATE.f).filter(n=>!q||(n.title+n.cat).includes(q))
+    .map(n=>`<div class="newsrow" data-act="read" data-id="${n.id}">
+        <img class="th" src="${IMGDIR}${n.thumb}${IMGEXT}" alt="">
+        <div class="mid"><div class="tt">${esc(n.title)}</div><div class="mm">${esc(n.cat)} · ${esc(n.date)} · 已读 ${n.read}/12</div></div>
+        <span class="ed" data-act="editNews" data-id="${n.id}">编辑</span>
+      </div>`).join('')||'<div class="empty">没有符合条件的要闻</div>';
+}
+function pgNewsList(){
+  return {t:'党建要闻',s:`共 ${DB.news.length} 条 · 可发布、编辑、删除`,
+    h:`<div class="card"><div class="pad news">
+        <div class="hd"><h2>本月要闻</h2><span class="more" data-act="addNews">发布要闻 ›</span></div>
+        <div class="rule"></div>
+        ${chipBar([['all','全部'],['通知','通知'],['要闻','要闻'],['公示','公示'],['纪要','纪要'],['支部通知','支部通知']],PSTATE.f)}
+        ${qbox('搜标题或分类')}
+        <div id="plist">${listNews()}</div>
+      </div></div>
+      <button class="btn ghost" data-act="addNews" style="width:100%;margin-top:12px">发布一条要闻</button>`,
+    list:listNews};
+}
+function pgArticle(id){
+  const n=DB.news.find(x=>x.id===id);
+  if(!n) return {t:'文章不存在',s:'',h:'<div class="card"><div class="pad">这条要闻已被删除。</div></div>'};
+  return {t:'党建要闻',s:`${n.cat} · ${n.date}`,
+    h:`<div class="card"><div class="pad art">
+        <div class="kicker">${esc(n.cat)}</div>
+        <h2>${esc(n.title)}</h2>
+        <div class="src">第一党支部 · 组织委员 张明 · ${esc(n.date)} · 已读 ${n.read}/12 人</div>
+        ${n.body.map((p,i)=>i===2&&n.quote?'<div class="quote">'+esc(n.quote)+'</div><p>'+esc(p)+'</p>':'<p>'+esc(p)+'</p>').join('')}
+        ${n.ask?'<div class="ask"><b>支部要求</b><br>'+esc(n.ask)+'</div>':''}
+      </div></div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div style="display:flex;gap:8px">
+          <button class="pbtn${n.read>=12?' done':''}" data-act="readDone" data-id="${n.id}" style="flex:1;height:40px">${n.read>=12?'已是已读状态':'标记为已读'}</button>
+          <button class="pbtn ghost" data-act="editNews" data-id="${n.id}" style="width:92px;height:40px">编辑</button>
+        </div>
+        <div style="font-size:10.5px;color:var(--ink-2);margin-top:8px">已读会记入支部台账：读一人记一人，不用另交纸面回执。</div>
+      </div></div>`};
+}
+
+/* ══════════════════════════════════════════════════════════════
+   二·五、在线学习 —— 视频 / PPT / Word 讲义
+   ══════════════════════════════════════════════════════════════ */
+const KIND={video:'视频',ppt:'PPT',doc:'讲义'};
+const LEARN={id:'',sec:0,playing:false,timer:null,ch:0,slide:0,page:0,fs:12.5};
+const IC={play:'<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M232.07,122.32,88.55,26.18A8,8,0,0,0,76,33v190a8,8,0,0,0,12.55,6.82L232.07,133.68a8,8,0,0,0,0-11.36Z"/></svg>',
+  pause:'<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M104,32H72a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8h32a8,8,0,0,0,8-8V40A8,8,0,0,0-8-8Zm88,0H160a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8h32a8,8,0,0,0,8-8V40A8,8,0,0,0-8-8Z"/></svg>',
+  prev:'<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>',
+  next:'<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M90.34,53.66a8,8,0,0,1,11.32-11.32l80,80a8,8,0,0,1,0,11.32l-80,80a8,8,0,0,1-11.32-11.32L164.69,128Z"/></svg>'};
+function fmtT(x){const m=Math.floor(x/60),ss=Math.floor(x%60);return (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss;}
+function stopLearn(){ if(LEARN.timer){clearInterval(LEARN.timer);LEARN.timer=null;} LEARN.playing=false; }
+function learnState(c){
+  if(LEARN.id!==c.id){
+    LEARN.id=c.id; LEARN.ch=0; LEARN.slide=0; LEARN.page=0; LEARN.fs=12.5;
+    LEARN.sec=c.type==='video'?(c.sec||0):0; LEARN.playing=false;
+  }
+}
+function tickVideo(c){
+  if(LEARN.timer) clearInterval(LEARN.timer);
+  LEARN.playing=true;
+  LEARN.timer=setInterval(()=>{
+    LEARN.sec=Math.min(c.total,LEARN.sec+20);
+    const t=document.getElementById('vtime'),p=document.getElementById('vpc'),b=document.getElementById('vbar');
+    if(t) t.textContent=fmtT(LEARN.sec)+' / '+fmtT(c.total);
+    if(p) p.textContent=Math.round(LEARN.sec/c.total*100)+'%';
+    if(b) b.style.width=(LEARN.sec/c.total*100).toFixed(1)+'%';
+    const mn=document.getElementById('vmin'); if(mn) mn.textContent=Math.round(LEARN.sec/60);
+    if(LEARN.sec>=c.total){
+      stopLearn();
+      if(c.prog<100){c.prog=100;c.note='已完成 · 计 6.0 学时';}
+      c.sec=c.total; refreshAll(); toast('「'+c.title+'」已看完，计 6.0 学时');
+    }
+  },500);
+}
+function slideHTML(c){
+  const sl=c.slides[LEARN.slide];
+  return `<div class="slide">
+    <div class="sh"><span>党史专题 · 第四讲</span><span>课件 ${LEARN.slide+1} / ${c.slides.length}</span></div>
+    <h3>${esc(sl.t)}</h3>
+    <ul>${sl.bl.map(x=>'<li>'+esc(x)+'</li>').join('')}</ul>
+    <div class="sf"><span>第一党支部 · 线上党课</span><span>${esc(c.note)}</span></div>
+  </div>`;
+}
+function docHTML(c){
+  const pg=c.pages[LEARN.page];
+  return `<div class="doc" style="--fs:${LEARN.fs}px">
+    <div class="dh"><span>中共芯科公司第一党支部 · 学习资料</span><span>${KIND.doc}</span></div>
+    <h1>${esc(pg.h)}</h1>
+    ${pg.ps.map(x=>'<p>'+esc(x)+'</p>').join('')}
+    <div class="df">第 ${LEARN.page+1} 页 / 共 ${c.pages.length} 页</div>
+  </div>`;
+}
+function videoPage(c){
+  const ch=c.chapters[LEARN.ch]||c.chapters[0];
+  const pct=(LEARN.sec/c.total*100).toFixed(1);
+  return {t:c.title,s:`视频课 · 共 ${c.chapters.length} 节 · ${c.min} 分钟`,
+    h:`<div class="card" style="padding:0;overflow:hidden">
+        <div class="vframe">
+          <img src="assets/${c.img||'hall'}.jpg" alt="">
+          <div class="shade"></div>
+          <div class="vtop"><span>${esc(ch.t)}</span><span>${LEARN.sec>=c.total?'已播完':'学习中'}</span></div>
+          <button class="vplay" data-act="vplay" data-id="${c.id}" aria-label="${LEARN.playing?'暂停':'播放'}">${LEARN.playing?IC.pause:IC.play}</button>
+          <div class="vbottom">
+            <div class="vbar"><i id="vbar" style="width:${pct}%"></i></div>
+            <div class="vrow"><span id="vtime">${fmtT(LEARN.sec)} / ${fmtT(c.total)}</span><span id="vpc">${Math.round(LEARN.sec/c.total*100)}%</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div class="hd"><h2>章节目录</h2><span class="more">共 ${c.chapters.length} 节 · ${c.min} 分钟</span></div>
+        <div class="rule"></div>
+        ${c.chapters.map((x,i)=>`<button class="chrow${i===LEARN.ch?' on':''}" data-act="vch" data-id="${i}">
+            <span class="no">${String(i+1).padStart(2,'0')}</span>
+            <span class="mid"><span class="nm">${esc(x.t)}</span><span class="mm">${x.dur} · 从 ${fmtT(x.at)} 开始</span></span>
+            <span class="pst ${i===LEARN.ch?'warn':''}">${i===LEARN.ch?'当前':'切换'}</span></button>`).join('')}
+      </div></div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div class="hd"><h2>学习记录</h2><span class="more">自动保存</span></div><div class="rule"></div>
+        <div style="display:flex;gap:18px">
+          <div><b id="vmin" style="font:700 16px var(--serif);color:var(--red)">${Math.round(LEARN.sec/60)}</b><div style="font-size:10.5px;color:var(--ink-2)">本节已学（分钟）</div></div>
+          <div><b style="font:700 16px var(--serif)">${c.prog}</b><div style="font-size:10.5px;color:var(--ink-2)">课程进度（%）</div></div>
+          <div><b style="font:700 16px var(--serif)">6.0</b><div style="font-size:10.5px;color:var(--ink-2)">学完计入（学时）</div></div>
+        </div>
+        <div style="font-size:10.5px;color:var(--ink-2);margin-top:8px;line-height:1.7">每 5 分钟自动写一次台账；换设备接着学，进度按秒恢复。</div>
+      </div></div>
+      <button class="btn gold" data-act="ldone" data-id="${c.id}" style="width:100%;margin-top:12px;height:42px">${c.prog>=100?'已学完 · 再看一遍':'标记本节学完'}</button>`.replace('${pct}',pct)};
+}
+function pptPage(c){
+  return {t:c.title,s:`课件 · 共 ${c.slides.length} 页 · 左右翻页`,
+    h:`<div id="slidebox">${slideHTML(c)}</div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div class="pager">
+          <button class="pbtn ghost" data-act="pslide" data-id="-1" aria-label="上一页" ${LEARN.slide===0?'disabled style="opacity:.4"':''}>${IC.prev}</button>
+          <span class="mid" id="slno">${LEARN.slide+1} / ${c.slides.length}</span>
+          <button class="pbtn ghost" data-act="pslide" data-id="1" aria-label="下一页" ${LEARN.slide===c.slides.length-1?'disabled style="opacity:.4"':''}>${IC.next}</button>
+        </div>
+        <div class="dots" id="dots">${c.slides.map((x,i)=>`<button class="${i===LEARN.slide?'on':''}" data-act="pgoto" data-id="${i}">${i+1}</button>`).join('')}</div>
+      </div></div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div class="hd"><h2>讲义备注</h2><span class="more">讲者可见</span></div><div class="rule"></div>
+        <div id="slnote" style="font-size:12px;line-height:1.85;color:var(--ink-2)">${esc(c.slides[LEARN.slide].note)}</div>
+      </div></div>
+      <button class="btn gold" data-act="ldone" data-id="${c.id}" style="width:100%;margin-top:12px;height:42px">${c.prog>=100?'已学完 · 再翻一遍':'标记课件学完'}</button>`};
+}
+function docPage(c){
+  return {t:c.title,s:`Word 讲义 · 共 ${c.pages.length} 页 · 可调字号`,
+    h:`<div id="docbox">${docHTML(c)}</div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div class="docbar">
+          <div class="fss"><button class="mini2" data-act="dfs" data-id="-1" aria-label="缩小字号">A−</button>
+            <button class="mini2" data-act="dfs" data-id="1" aria-label="放大字号">A＋</button></div>
+          <div style="display:flex;gap:8px">
+            <button class="pbtn ghost" data-act="dpage" data-id="-1" ${LEARN.page===0?'disabled style="opacity:.4"':''}>上一页</button>
+            <button class="pbtn ghost" data-act="dpage" data-id="1" ${LEARN.page===c.pages.length-1?'disabled style="opacity:.4"':''}>下一页</button>
+          </div>
+        </div>
+      </div></div>
+      <div class="card" style="margin-top:12px"><div class="pad">
+        <div class="hd"><h2>这份讲义怎么用</h2></div><div class="rule"></div>
+        <div style="font-size:12px;line-height:1.85;color:var(--ink-2)">先按页通读，再用 A−／A＋ 调到舒服的字号；读完点下面标记学完，系统按 6.0 学时记入本月学习进度，并在学习中心同步。</div>
+      </div></div>
+      <button class="btn gold" data-act="ldone" data-id="${c.id}" style="width:100%;margin-top:12px;height:42px">${c.prog>=100?'已学完 · 再读一遍':'标记讲义学完'}</button>`};
+}
+function paintPpt(c){
+  const box=document.getElementById('slidebox'); if(box) box.innerHTML=slideHTML(c);
+  const no=document.getElementById('slno'); if(no) no.textContent=(LEARN.slide+1)+' / '+c.slides.length;
+  const note=document.getElementById('slnote'); if(note) note.textContent=c.slides[LEARN.slide].note;
+  document.querySelectorAll('#dots button').forEach((b,i)=>b.classList.toggle('on',i===LEARN.slide));
+  const prev=document.querySelector('[data-act=pslide][data-id="-1"]'),next=document.querySelector('[data-act=pslide][data-id="1"]');
+  if(prev) prev.disabled=(LEARN.slide===0); if(next) next.disabled=(LEARN.slide===c.slides.length-1);
+}
+function paintDoc(c){
+  const box=document.getElementById('docbox'); if(box) box.innerHTML=docHTML(c);
+  const prev=document.querySelector('[data-act=dpage][data-id="-1"]'),next=document.querySelector('[data-act=dpage][data-id="1"]');
+  if(prev) prev.disabled=(LEARN.page===0); if(next) next.disabled=(LEARN.page===c.pages.length-1);
+}
+
+function pgLearn(id){
+  const c=DB.courses.find(x=>x.id===id);
+  if(!c) return {t:'课程不存在',s:'',h:'<div class="card"><div class="pad">这门课程已被删除。</div></card>'};
+  learnState(c);
+  if(c.type==='ppt') return pptPage(c);
+  if(c.type==='doc') return docPage(c);
+  return videoPage(c);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   三、页面栈
+   ══════════════════════════════════════════════════════════════ */
+const pageEl=document.getElementById('page'),pflow=document.getElementById('pflow');
+const pTitle=document.getElementById('pTitle'),pSub=document.getElementById('pSub');
+let pageStack=[],curKey='';
+function pageOf(key){
+  if(key==='meetings') return pgMeetings();
+  if(key==='courses') return pgCourses();
+  if(key==='integrity') return pgCases();
+  if(key==='dues') return pgDues();
+  if(key==='newslist') return pgNewsList();
+  if(key.indexOf('learn:')===0) return pgLearn(key.slice(6));
+  if(key.indexOf('news:')===0) return pgArticle(key.slice(5));
+  if(/^news\d$/.test(key)) return pgArticle('n'+key.slice(4));
+  return null;
+}
+let curPg=null;
+function renderKey(key){
+  const pg=pageOf(key); if(!pg) return false;
+  curPg=pg; pTitle.textContent=pg.t; pSub.textContent=pg.s; pflow.innerHTML=pg.h; pflow.scrollTop=0;
+  return true;
+}
+function openPage(key){
+  if(key.indexOf('learn:')!==0) stopLearn();
+  const pg=pageOf(key); if(!pg) return;
+  PSTATE.f='all';PSTATE.q='';
+  renderKey(key); pageEl.classList.add('on'); tabbar.style.display='none';
+  curKey=key;
+  if(pageStack[pageStack.length-1]!==key) pageStack.push(key);
+}
+function closePageAll(){ stopLearn();pageStack=[];curKey=''; pageEl.classList.remove('on'); tabbar.style.display='flex'; }
+function closePage(){
+  stopLearn();
+  pageStack.pop();
+  const k=pageStack[pageStack.length-1];
+  if(k){ PSTATE.f='all';PSTATE.q=''; renderKey(k); curKey=k; return; }
+  curKey=''; pageEl.classList.remove('on'); tabbar.style.display='flex';
+}
+document.getElementById('btnPageBack').onclick=closePage;
+function refreshList(){ if(curPg&&curPg.list){ const el=document.getElementById('plist'); if(el) el.innerHTML=curPg.list(); } }
+function refreshAll(){
+  if(curKey&&pageEl.classList.contains('on')){
+    const pg=pageOf(curKey);
+    if(pg){ curPg=pg; pTitle.textContent=pg.t; pSub.textContent=pg.s;
+      const keepQ=PSTATE.q,keepF=PSTATE.f;
+      pflow.innerHTML=pg.h; PSTATE.q=keepQ;PSTATE.f=keepF;
+      const list=document.getElementById('plist'); if(list&&pg.list) list.innerHTML=pg.list();
+      pflow.scrollTop=0; }
+  }
+  syncHome(); renderOrg(); renderMembers(); renderFiles();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   四、底部编辑面板：所有新增/修改/删除都走这里
+   ══════════════════════════════════════════════════════════════ */
+const sheet=document.getElementById('sheet');
+const shTitle=document.getElementById('shTitle'),shSub=document.getElementById('shSub');
+const shBody=document.getElementById('shBody'),shDel=document.getElementById('shDel');
+let SH=null;
+function openEditor(cfg){
+  SH=cfg; shTitle.textContent=cfg.title; shSub.textContent=cfg.sub||'';
+  shBody.innerHTML=cfg.fields.map(f=>{
+    const v=cfg.values&&cfg.values[f.k]!=null?cfg.values[f.k]:(f.def!=null?f.def:'');
+    if(f.type==='sel') return '<div class="row"><label>'+f.label+'</label><select data-f="'+f.k+'">'+
+      f.opts.map(o=>'<option'+(String(o)===String(v)?' selected':'')+'>'+o+'</option>').join('')+'</select></div>';
+    if(f.type==='area') return '<div class="row"><label>'+f.label+'</label><textarea data-f="'+f.k+'" rows="3" placeholder="'+(f.ph||'')+'">'+esc(v)+'</textarea></div>';
+    return '<div class="row"><label>'+f.label+'</label><input data-f="'+f.k+'" type="'+(f.type||'text')+'" value="'+esc(v)+'" placeholder="'+(f.ph||'')+'"></div>';
+  }).join('');
+  shDel.style.display=cfg.onDelete?'block':'none';
+  sheet.style.transition='none';   /* 关掉过渡：截图/录屏环境里 transition 不推进，面板会停在画面外 */
+  sheet.style.transform='none';
+  sheet.classList.add('on');
+}
+function closeSheet(){ sheet.classList.remove('on'); sheet.style.transform='translateY(100%)'; SH=null; }
+document.getElementById('shCancel').onclick=closeSheet;
+document.getElementById('shSave').onclick=()=>{
+  if(!SH) return;
+  const o={}; shBody.querySelectorAll('[data-f]').forEach(el=>{ o[el.dataset.f]=el.value.trim(); });
+  if(SH.need&&!o[SH.need]){ toast('请先填写'+SH.needLabel); return; }
+  SH.onSave(o); const done=SH.done||'已保存'; closeSheet(); refreshAll(); toast(done);
+};
+shDel.onclick=()=>{ if(!SH||!SH.onDelete) return; SH.onDelete(); const d=SH.delDone||'已删除'; closeSheet(); refreshAll(); toast(d); };
+
+/* ══════════════════════════════════════════════════════════════
+   五、各实体的增删改
+   ══════════════════════════════════════════════════════════════ */
+function mDayOf(date){ const p=(date||'').split('-'); return {day:(p[2]||'00'),mon:(p[1]?parseInt(p[1],10)+' 月':'')}; }
+function editMeeting(id){
+  const m=DB.meetings.find(x=>x.id===id);
+  const f=[
+    {k:'type',label:'会议类型',type:'sel',opts:['支委会','党员大会','党小组会','党课','主题党日']},
+    {k:'title',label:'会议名称'},{k:'date',label:'日期（2026-11-20）',def:'2026-11-20'},
+    {k:'time',label:'时间',def:'15:00'},{k:'place',label:'地点',def:'201 会议室'},
+    {k:'expect',label:'应到人数',type:'number',def:'12'}];
+  openEditor({title:(m?'编辑会议':'发起一场会议'),sub:'保存后会议安排与统计会一起更新',
+    fields:f,values:m||{},need:'title',needLabel:'会议名称',
+    onSave:o=>{
+      const dm=mDayOf(o.date);
+      if(m){ Object.assign(m,o,{expect:+o.expect||m.expect,day:dm.day,mon:dm.mon}); }
+      else DB.meetings.push({id:nid(),date:o.date,day:dm.day,mon:dm.mon,type:o.type,title:o.title,time:o.time,place:o.place,expect:+o.expect||12,actual:0,st:'open'});
+      DB.meetings.sort((a,b)=>a.date.localeCompare(b.date));
+    },
+    onDelete:m?()=>{ DB.meetings=DB.meetings.filter(x=>x.id!==id); }:null,
+    delDone:'已删除这场会议，统计已同步',
+    done:m?'会议已更新':'会议已发起，已推送给支部党员'});
+}
+function editCourse(id){
+  const c=DB.courses.find(x=>x.id===id);
+  openEditor({title:c?'编辑课程':'添加一门课程',sub:'进度按百分比计，100 即完成并计入 6.0 学时',
+    fields:[{k:'title',label:'课程名称'},{k:'min',label:'视频时长（分钟）',type:'number',def:'20'},
+            {k:'prog',label:'当前进度（0–100）',type:'number',def:'0'},{k:'note',label:'备注',ph:'如：课件 3 节'}],
+    values:c||{},need:'title',needLabel:'课程名称',
+    onSave:o=>{
+      const prog=Math.max(0,Math.min(100,+o.prog||0));
+      if(c) Object.assign(c,{title:o.title,min:+o.min||c.min,prog,note:o.note});
+      else DB.courses.push({id:nid(),title:o.title,min:+o.min||20,prog,note:o.note||'新增课程'});
+    },
+    onDelete:c?()=>{ DB.courses=DB.courses.filter(x=>x.id!==id); }:null,
+    delDone:'课程已删除',
+    done:c?'课程已更新':'课程已添加'});
+}
+function editCase(id){
+  const k=DB.cases.find(x=>x.id===id);
+  openEditor({title:k?'案例设置':'录入一个案例',sub:'标记为已看后计入本月学时',
+    fields:[{k:'title',label:'案例标题'},{k:'min',label:'时长（分钟）',type:'number',def:'8'},
+            {k:'date',label:'学习日期',def:'10 月 26 日'},
+            {k:'seen',label:'是否已看',type:'sel',opts:['已看','未看']}],
+    values:k?{...k,seen:k.seen?'已看':'未看'}:{seen:'未看',date:'10 月 26 日'},need:'title',needLabel:'案例标题',
+    onSave:o=>{
+      if(k) Object.assign(k,{title:o.title,min:+o.min||k.min,date:o.date,seen:o.seen==='已看'});
+      else DB.cases.push({id:nid(),title:o.title,min:+o.min||8,date:o.date||'10 月 26 日',seen:o.seen==='已看'});
+    },
+    onDelete:k?()=>{ DB.cases=DB.cases.filter(x=>x.id!==id); }:null,
+    delDone:'案例已删除',done:k?'案例已更新':'案例已录入'});
+}
+function editNews(id){
+  const n=DB.news.find(x=>x.id===id);
+  openEditor({title:n?'编辑要闻':'发布一条要闻',sub:'发布后立即出现在首页与要闻列表',
+    fields:[{k:'title',label:'标题'},{k:'cat',label:'分类',type:'sel',opts:['通知','要闻','公示','纪要','支部通知']},
+            {k:'date',label:'日期',def:'10 月 26 日'},
+            {k:'text',label:'正文首段',type:'area',ph:'一段话说清这件事'}],
+    values:n?{...n,text:n.body[0]}:{cat:'通知'},need:'title',needLabel:'标题',
+    onSave:o=>{
+      if(n){ Object.assign(n,{title:o.title,cat:o.cat,date:o.date}); if(o.text) n.body[0]=o.text; }
+      else DB.news.unshift({id:nid(),cat:o.cat,date:o.date,title:o.title,read:0,thumb:'seal',
+        body:[o.text||'（正文待补充）'],quote:'',ask:'全体党员阅读后在群内报一声。'});
+    },
+    onDelete:n?()=>{ DB.news=DB.news.filter(x=>x.id!==id); }:null,
+    delDone:'要闻已删除',done:n?'要闻已更新':'要闻已发布'});
+}
+function editMember(id){
+  const u=DB.members.find(x=>x.id===id);
+  openEditor({title:u?'编辑党员':'添加党员',sub:'保存后组织架构、支部党员名单与人数一起变',
+    fields:[{k:'name',label:'姓名'},{k:'group',label:'所属党小组',type:'sel',opts:['技术党小组','运营党小组','青年党小组']},
+            {k:'role',label:'职务',def:'党员'},{k:'years',label:'党龄（年）',type:'number',def:'1'},
+            {k:'hours',label:'本月学时',type:'number',def:'0'}],
+    values:u?{...u,group:GROUP[u.group]}:{group:'技术党小组'},need:'name',needLabel:'姓名',
+    onSave:o=>{
+      const gk=Object.keys(GROUP).find(k=>GROUP[k]===o.group)||'g1';
+      if(u) Object.assign(u,{name:o.name,role:o.role,group:gk,years:+o.years||0,hours:+o.hours||0});
+      else DB.members.push({id:nid(),name:o.name,role:o.role||'党员',group:gk,years:+o.years||1,hours:+o.hours||0});
+    },
+    onDelete:u&&!u.self?()=>{ DB.members=DB.members.filter(x=>x.id!==id); }:null,
+    delDone:'党员已移除',
+    done:u?'党员信息已更新':'党员已加入支部'});
+}
+function editFile(id){
+  const f=DB.files.find(x=>x.id===id);
+  openEditor({title:f?'文件信息':'上传群文件',sub:'保存后在群信息里可见',
+    fields:[{k:'name',label:'文件名',ph:'如：11 月支委会议程.docx'},{k:'size',label:'大小',def:'320 KB'},
+            {k:'when',label:'上传日期',def:'10 月 26 日'}],
+    values:f||{},need:'name',needLabel:'文件名',
+    onSave:o=>{
+      if(f) Object.assign(f,{name:o.name,size:o.size,when:o.when});
+      else DB.files.unshift({id:nid(),name:o.name,by:'张明',when:o.when,size:o.size});
+    },
+    onDelete:f?()=>{ DB.files=DB.files.filter(x=>x.id!==id); }:null,
+    delDone:'文件已删除',done:f?'文件信息已更新':'文件已上传'});
+}
+
+/* ══════════════════════════════════════════════════════════════
+   六、页面内交互
+   ══════════════════════════════════════════════════════════════ */
+pflow.addEventListener('input',e=>{
+  if(e.target.dataset.act==='q'){ PSTATE.q=e.target.value; refreshList(); }
+});
+/* 统一的动作派发：页面内、通讯录、群信息里的 data-act 都走这里 */
+function doAct(act,id,a,e){
+  switch(act){
+    case 'filter': PSTATE.f=a.dataset.v; refreshAll(); return true;
+    case 'addMeeting': editMeeting(null); return true;
+    case 'editMeeting': editMeeting(id); return true;
+    case 'addCourse': editCourse(null); return true;
+    case 'editCourse': editCourse(id); return true;
+    case 'addCase': editCase(null); return true;
+    case 'editCase': editCase(id); return true;
+    case 'addNews': editNews(null); return true;
+    case 'editNews': editNews(id); return true;
+    case 'addMember': editMember(null); return true;
+    case 'editMember': editMember(id); return true;
+    case 'addFile': editFile(null); return true;
+    case 'editFile': editFile(id); return true;
+    case 'selfTip': toast('这是你本人（张明 · 组织委员），不需要给自己发消息'); return true;
+    case 'sign': {
+      const m=DB.meetings.find(x=>x.id===id);
+      if(m){ m.actual=m.expect; m.st='done'; refreshAll(); toast('已签到：'+m.title+'，记录归档到支部台账'); }
+      return true; }
+    case 'pay': {
+      const c=DB.duesCur, cert='XJ2026'+c.month+'0600'+(DB.dues.length+1);
+      c.paid=true; c.cert=cert;
+      DB.dues.unshift({id:nid(),mon:c.month,amt:c.amt,way:'微信支付',when:'10 月 26 日 10:06',cert});
+      refreshAll(); toast('党费 '+c.amt+' 元已缴纳，凭证 '+cert+' 已归档'); return true; }
+    case 'payRecheck': toast('本月党费已缴纳，凭证 '+(DB.duesCur.cert||'—')); return true;
+    case 'cont': {
+      const c=DB.courses.find(x=>x.id===id);
+      if(c){ c.prog=Math.min(100,c.prog+8); c.note=c.prog>=100?'已完成 · 计 6.0 学时':'上次学到 '+c.prog+'%，共 '+c.min+' 分钟';
+        refreshAll(); toast(c.prog>=100?('「'+c.title+'」已完成，计 6.0 学时'):('已继续播放「'+c.title+'」，进度 '+c.prog+'%')); }
+      return true; }
+    case 'delDues': DB.dues=DB.dues.filter(x=>x.id!==id); refreshAll(); toast('缴纳记录已删除'); return true;
+    case 'submitCases': {
+      const seen=DB.cases.filter(c=>c.seen).length;
+      toast('已提交：'+seen+'/'+DB.cases.length+' 个案例的学习情况已汇入支部台账'); return true; }
+    case 'readDone': {
+      const n=DB.news.find(x=>x.id===id); if(n){ n.read=12; refreshAll(); toast('已标记为已读，支部台账同步'); }
+      return true; }
+    case 'learn': openPage('learn:'+id); return true;
+    case 'vplay': {
+      const c=DB.courses.find(x=>x.id===id); if(!c) return true;
+      if(LEARN.playing){ stopLearn(); renderKey('learn:'+c.id); toast('已暂停 · 进度已保存（'+fmtT(LEARN.sec)+'）'); }
+      else { tickVideo(c); renderKey('learn:'+c.id); toast('开始播放 · 每 5 分钟自动记录一次'); }
+      return true; }
+    case 'vch': {
+      const c=DB.courses.find(x=>x.id===LEARN.id); if(!c) return true;
+      LEARN.ch=Math.max(0,Math.min(c.chapters.length-1,Number(id)));
+      LEARN.sec=c.chapters[LEARN.ch].at;
+      stopLearn(); renderKey('learn:'+c.id);
+      toast('已切到第 '+(LEARN.ch+1)+' 节：'+c.chapters[LEARN.ch].t);
+      return true; }
+    case 'pslide': {
+      const c=DB.courses.find(x=>x.id===LEARN.id); if(!c) return true;
+      LEARN.slide=Math.max(0,Math.min(c.slides.length-1,LEARN.slide+Number(id)));
+      paintPpt(c); return true; }
+    case 'pgoto': {
+      const c=DB.courses.find(x=>x.id===LEARN.id); if(!c) return true;
+      LEARN.slide=Math.max(0,Math.min(c.slides.length-1,Number(id)));
+      paintPpt(c); return true; }
+    case 'dpage': {
+      const c=DB.courses.find(x=>x.id===LEARN.id); if(!c) return true;
+      LEARN.page=Math.max(0,Math.min(c.pages.length-1,LEARN.page+Number(id)));
+      paintDoc(c); return true; }
+    case 'dfs': {
+      const c=DB.courses.find(x=>x.id===LEARN.id); if(!c) return true;
+      LEARN.fs=Math.max(11,Math.min(16,LEARN.fs+(Number(id)>0?0.75:-0.75)));
+      const box=document.getElementById('docbox'); if(box) box.firstElementChild.style.setProperty('--fs',LEARN.fs+'px');
+      return true; }
+    case 'ldone': {
+      const c=DB.courses.find(x=>x.id===id); if(!c) return true;
+      stopLearn();
+      c.prog=100; c.note=c.type==='video'?'视频 3 节 · 已完成 · 计 6.0 学时'
+        :c.type==='ppt'?'课件 '+c.slides.length+' 页 · 已完成 · 计 6.0 学时'
+        :'Word 讲义 '+c.pages.length+' 页 · 已完成 · 计 6.0 学时';
+      refreshAll(); toast('「'+c.title+'」已学完，计 6.0 学时，已同步到学习中心');
+      return true; }
+    case 'read': openPage('news:'+id); return true;
+  }
+  return false;
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('#sheet')) return;
+  const a=e.target.closest('[data-act]');
+  if(a&&doAct(a.dataset.act,a.dataset.id,a,e)){ e.preventDefault(); return; }
+  const p=e.target.closest('[data-page]');
+  if(p){ openPage(p.dataset.page); return; }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   七、通讯录（组织架构 / 支部党员）与群文件 —— 全部从 DB 渲染
+   ══════════════════════════════════════════════════════════════ */
+let openGroups={g1:false,g2:false,g3:false},showG=true;
+function memberSub(u){ return (u.role&&u.role!=='党员'?u.role+' · ':'')+'党龄 '+u.years+' 年 · 本月学时 '+u.hours.toFixed(1); }
+function renderOrg(){
+  const tree=document.getElementById('tree'); if(!tree) return;
+  const n=DB.members.length;
+  let h=`<div class="r" data-tree="c1"><span class="lv"></span>
+      <div><div class="nm">中共芯科公司委员会</div><div class="sub">下辖 6 个党支部</div></div><span class="cnt">6 ›</span></div>
+    <div class="r" data-parent="c1" data-tree="b1" style="padding-left:22px"><span class="lv" style="background:var(--red)"></span>
+      <div><div class="nm">第一党支部</div><div class="sub">书记 1 · 委员 3 · 党员 ${n}</div></div><span class="cnt">${n} ${showG?'▾':'›'}</span></div>`;
+  if(showG) Object.keys(GROUP).forEach(g=>{
+    const list=inGroup(g), open=openGroups[g];
+    h+=`<div class="r" data-parent="b1" data-tree="${g}" style="padding-left:38px">
+        <div><div class="nm">${GROUP[g]}</div><div class="sub">组长 ${esc((list[0]||{name:'—'}).name)} · ${list.length} 人</div></div>
+        <span class="cnt">${list.length} ${open?'▾':'›'}</span></div>`;
+    if(open) h+=list.map(u=>`<div class="r" data-parent="${g}" data-person="${u.id}" style="padding-left:52px">
+        <span class="mini">${esc(u.name.slice(0,1))}</span>
+        <div><div class="nm">${esc(u.name)}${u.self?'（本人）':''}</div><div class="sub">${esc(memberSub(u))}</div></div>
+        <span class="cnt" ${u.self?'':'data-act="editMember" data-id="'+u.id+'"'}>${u.self?'当前账号':'编辑 ›'}</span></div>`).join('');
+  });
+  tree.innerHTML=h;
+}
+function renderMembers(){
+  const el=document.getElementById('mlist'); if(!el) return;
+  const cnt=document.getElementById('mcount'); if(cnt) cnt.textContent=DB.members.length+' 名';
+  el.innerHTML=DB.members.map(u=>`<button class="r" ${u.self?'data-act="selfTip"':(u.chat?'data-chat="'+u.chat+'"':'data-person="'+u.id+'"')}>
+      <span class="mini">${esc(u.name.slice(0,1))}</span>
+      <div><div class="nm">${esc(u.name)}${u.self?'（本人）':''}</div><div class="sub">${esc(memberSub(u))}</div></div>
+      <span class="cnt" ${u.self?'':'data-act="editMember" data-id="'+u.id+'"'}>${u.self?'当前账号':'编辑 ›'}</span></button>`).join('');
+}
+function renderFiles(){
+  const el=document.getElementById('flist'); if(!el) return;
+  const cnt=document.getElementById('fcount'); if(cnt) cnt.textContent=DB.files.length+' 个';
+  el.innerHTML=DB.files.map(f=>`<div class="gfile" style="width:100%;text-align:left">
+      <span class="fi"><svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0-40,16V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Z"/></svg></span>
+      <span class="tx"><b>${esc(f.name)}</b><span>${esc(f.by)} · ${esc(f.when)} · ${esc(f.size)}</span></span>
+      <span class="cnt" data-act="editFile" data-id="${f.id}">编辑</span></div>`).join('');
+}
+
+document.getElementById('tree').addEventListener('click',e=>{
+  const ed=e.target.closest('[data-act="editMember"]');
+  if(ed){ e.stopPropagation(); editMember(ed.dataset.id); return; }
+  const p=e.target.closest('[data-person]');
+  if(p){
+    const u=DB.members.find(x=>x.id===p.dataset.person);
+    if(u.self){ toast('这是你本人（张明 · 组织委员），不需要给自己发消息'); return; }
+    if(u.chat){ openChat(u.chat); return; }
+    toast(u.name+' · '+(u.role||'党员')+' · 党龄 '+u.years+' 年 · 本月学时 '+u.hours.toFixed(1)); return; }
+  const r=e.target.closest('[data-tree]');
+  if(!r) return;
+  const k=r.dataset.tree;
+  if(k==='c1'){ toast('中共芯科公司委员会下辖 6 个党支部，本演示展开第一党支部'); return; }
+  if(k==='b1'){ showG=!showG; renderOrg(); toast(showG?'已展开第一党支部的 3 个党小组':'已收起党小组'); return; }
+  openGroups[k]=!openGroups[k];
+  renderOrg();
+  toast((openGroups[k]?'已展开 ':'已收起 ')+GROUP[k]+'（'+inGroup(k).length+' 人）');
+});
+
+/* ══════════════════════════════════════════════════════════════
+   八、首页与「我的」上的数字跟着数据走
+   ══════════════════════════════════════════════════════════════ */
+function syncHome(){
+  const oct=DB.meetings.filter(m=>m.mon==='10 月');
+  const hl=document.getElementById('hLife'); if(hl) hl.textContent=oct.filter(m=>m.st!=='future').length;
+  const hh=document.getElementById('hHours'); if(hh) hh.textContent=(12.5+(DB.courses.filter(c=>c.prog>=100).length-1)*6).toFixed(1);
+  const hn=document.getElementById('hNewsCount'); if(hn) hn.textContent='全部 '+DB.news.length+' 条';
+  const hd=document.getElementById('hDues'); if(hd) hd.textContent=DB.duesCur.paid?'已缴':'待缴 '+DB.duesCur.amt+' 元';
+  const mh=document.getElementById('mHours'); if(mh) mh.textContent=(12.5+(DB.courses.filter(c=>c.prog>=100).length-1)*6).toFixed(1);
+  const fs=document.getElementById('btnSignup');
+  if(fs){ fs.textContent=DB.signup?'已报名 · 可请假':'报名参加'; fs.classList.toggle('done',DB.signup); fs.classList.toggle('gold',!DB.signup); }
+}
+
+/* 关键屏声明 */
+window.__UI_CAPTURE__={
+  reset:async()=>{closeSearch();closeDetail();closePageAll();closeSheet();openModal(false);goTab('home');},
+  states:[
+    {id:'home',label:'首页'},
+    {id:'msg',label:'消息 · 群组与一对一',go:async()=>goTab('msg')},
+    {id:'direct',label:'一对一会话',go:async()=>{goTab('msg');openChat('direct');}},
+    {id:'group',label:'群组会话',go:async()=>{goTab('msg');openChat('group');}},
+    {id:'info',label:'群组信息',go:async()=>{goTab('msg');lastChat='group';openChat('group');openChat('info');}},
+    {id:'contacts',label:'通讯录',go:async()=>{closeDetail();goTab('contacts');}},
+    {id:'me',label:'我的',go:async()=>{closeDetail();goTab('me');}},
+    {id:'newgroup',label:'发起群聊',go:async()=>{goTab('msg');openModal(true);}},
+    {id:'search',label:'搜索',go:async()=>{closeDetail();goTab('msg');openSearch();sinput.value='张';renderRes('张');}},
+    {id:'meetings',label:'三会一课',go:async()=>{closePageAll();goTab('home');openPage('meetings');}},
+    {id:'courses',label:'学习中心',go:async()=>{closePageAll();goTab('home');openPage('courses');}},
+    {id:'integrity',label:'廉政课堂',go:async()=>{closePageAll();goTab('home');openPage('integrity');}},
+    {id:'dues',label:'党费缴纳',go:async()=>{closePageAll();goTab('home');openPage('dues');}},
+    {id:'newslist',label:'要闻列表',go:async()=>{closePageAll();goTab('home');openPage('newslist');}},
+    {id:'article',label:'要闻文章',go:async()=>{closePageAll();goTab('home');openPage('news:n1');}},
+    {id:'learn-video',label:'在线学习 · 视频',go:async()=>{closePageAll();goTab('home');openPage('learn:c1');}},
+    {id:'learn-ppt',label:'在线学习 · PPT',go:async()=>{closePageAll();goTab('home');openPage('learn:c2');}},
+    {id:'learn-doc',label:'在线学习 · Word 讲义',go:async()=>{closePageAll();goTab('home');openPage('learn:c3');}},
+    {id:'editor',label:'编辑面板 · 发起会议',go:async()=>{closePageAll();goTab('home');openPage('meetings');editMeeting(null);}}
+  ]};
+renderOrg();renderMembers();renderFiles();syncHome();
+</script>
+<style>
+/* 编辑面板：主样式块在 body 里更靠后，这条放在最后才压得住 .modal 的折叠态 */
+.modal.sheet{z-index:92}
+.modal.sheet.on{transform:none}
+</style>
+</body>
+</html>
